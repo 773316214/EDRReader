@@ -1,2 +1,2 @@
 # EDRReader
- EDRReader for EDR recorded data.
+ EDRReader for EDR data.
