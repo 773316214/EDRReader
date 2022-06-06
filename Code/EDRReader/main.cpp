@@ -16,6 +16,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     MainWindow w;
+    QApplication::setWindowIcon(QIcon(":/image/Image/EDRReader.ico"));
     w.show();
     return a.exec();
 }
