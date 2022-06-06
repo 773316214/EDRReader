@@ -2,12 +2,13 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.1
+** Version	: 1.0.2
 ** Author	: DuanZhaobing
 ** Email    : duanzb@waythink.cn
 ** Data     : 2022.06.02-2022.06.06
 **
 ****************************************************************************/
+
 #ifndef CENTERWINDOW_H
 #define CENTERWINDOW_H
 
@@ -17,7 +18,7 @@
 #include <QTableWidget>
 #include <QLabel>
 
-#include "qcustomplot/fcustomplot.h"
+#include "QCustomPlot/fcustomplot.h"
 
 
 class CenterWindow : public QWidget

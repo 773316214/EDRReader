@@ -2,12 +2,13 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.1
+** Version	: 1.0.2
 ** Author	: DuanZhaobing
 ** Email    : duanzb@waythink.cn
 ** Data     : 2022.06.02-2022.06.06
 **
 ****************************************************************************/
+
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 

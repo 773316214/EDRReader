@@ -19,16 +19,20 @@ VERSION = 1.0.0
 
 SOURCES += \
     CenterWindow/centerwindow.cpp \
+    Log/flog.cpp \
+    Log/src/easylogging++.cc \
+    QCustomPlot/fcustomplot.cpp \
+    QCustomPlot/qcustomplot.cpp \
     main.cpp \
-    mainwindow.cpp \
-    qcustomplot/fcustomplot.cpp \
-    qcustomplot/qcustomplot.cpp
+    mainwindow.cpp
 
 HEADERS += \
     CenterWindow/centerwindow.h \
-    mainwindow.h \
-    qcustomplot/fcustomplot.h \
-    qcustomplot/qcustomplot.h
+    Log/flog.h \
+    Log/src/easylogging++.h \
+    QCustomPlot/fcustomplot.h \
+    QCustomPlot/qcustomplot.h \
+    mainwindow.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
