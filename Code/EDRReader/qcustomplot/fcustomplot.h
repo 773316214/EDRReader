@@ -8,24 +8,22 @@
 ** Data     : 2022.06.02-2022.06.06
 **
 ****************************************************************************/
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
 
-#include <QMainWindow>
-#include "CenterWindow/centerwindow.h"
+#ifndef FCUSTOMPLOT_H
+#define FCUSTOMPLOT_H
 
-class MainWindow : public QMainWindow
+#include "qcustomplot/qcustomplot.h"
+
+class FCustomPlot : public QCustomPlot
 {
     Q_OBJECT
-
 public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    explicit FCustomPlot(QWidget *parent = 0);
 
-public:
-    void InitUI();
+signals:
 
-private:
-    CenterWindow *center_window_{nullptr};
+public slots:
+
 };
-#endif // MAINWINDOW_H
+
+#endif // FCUSTOMPLOT_H

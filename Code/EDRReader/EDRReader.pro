@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui printsupport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -15,14 +15,25 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+VERSION = 1.0.0
+
 SOURCES += \
+    CenterWindow/centerwindow.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    qcustomplot/fcustomplot.cpp \
+    qcustomplot/qcustomplot.cpp
 
 HEADERS += \
-    mainwindow.h
+    CenterWindow/centerwindow.h \
+    mainwindow.h \
+    qcustomplot/fcustomplot.h \
+    qcustomplot/qcustomplot.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    Resources/StytleSheet.qrc
