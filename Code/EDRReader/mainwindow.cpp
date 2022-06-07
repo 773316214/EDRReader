@@ -13,6 +13,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , serial_(new serial_port::MasterSerialThread)
 {
     el::Loggers::removeFlag(el::LoggingFlag::NewLineForContainer);
     el::Helpers::installLogDispatchCallback<LogHandler>("LogHandler");

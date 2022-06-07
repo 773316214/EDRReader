@@ -14,6 +14,7 @@
 
 #include <QMainWindow>
 #include "CenterWindow/centerwindow.h"
+#include "Serial/masterthread.h"
 
 class MainWindow : public QMainWindow
 {
@@ -28,5 +29,6 @@ public:
 
 private:
     CenterWindow *center_window_{nullptr};
+    serial_port::MasterSerialThread *serial_{nullptr};
 };
 #endif // MAINWINDOW_H
