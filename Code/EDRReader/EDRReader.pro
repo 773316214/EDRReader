@@ -1,4 +1,4 @@
-QT       += core gui printsupport
+QT       += core gui printsupport serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -23,6 +23,8 @@ SOURCES += \
     Log/src/easylogging++.cc \
     QCustomPlot/fcustomplot.cpp \
     QCustomPlot/qcustomplot.cpp \
+    Serial/masterthread.cpp \
+    Serial/slavethread.cpp \
     main.cpp \
     mainwindow.cpp
 
@@ -32,6 +34,8 @@ HEADERS += \
     Log/src/easylogging++.h \
     QCustomPlot/fcustomplot.h \
     QCustomPlot/qcustomplot.h \
+    Serial/masterthread.h \
+    Serial/slavethread.h \
     mainwindow.h
 
 # Default rules for deployment.
