@@ -2,10 +2,10 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.2
+** Version	: 1.0.3
 ** Author	: DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.06
+** Data     : 2022.06.02-2022.06.10
 **
 ****************************************************************************/
 
@@ -20,6 +20,7 @@
 
 #include "QCustomPlot/fcustomplot.h"
 
+extern QByteArray dataToHex(const QByteArray &data, const QString &separator = " ", const QString &prefix = "");
 
 class CenterWindow : public QWidget
 {
@@ -29,10 +30,24 @@ public:
 
 public:
     void InitUI();
-    void SetupAccAxis(QCustomPlot *customPlot);
+    void InitConnect();
 private:
     QWidget* base_widget_{nullptr};  // 基础窗体
-    ///ECU information
+
+    /// <summary>
+    /// ECU information
+    /// ecu_information_btn_[0] : 序列号
+    /// ecu_information_btn_[1] : 硬件版本号
+    /// ecu_information_btn_[2] : 软件版本号
+    /// ecu_information_btn_[3] : 生产日期
+    /// ecu_information_btn_[4] : 功能配置字
+    ///
+    /// ecu_information_line_[0] : 序列号
+    /// ecu_information_line_[1] : 硬件版本号
+    /// ecu_information_line_[2] : 软件版本号
+    /// ecu_information_line_[3] : 软件版本号
+    /// ecu_information_line_[4] : 功能配置字
+    /// <summary>
     QPushButton *ecu_information_btn_[5]{nullptr};
     QLineEdit *ecu_information_line_[5]{nullptr};
 
@@ -54,6 +69,57 @@ private:
 signals:
 
 public slots:
+
+    /// <function summary>
+    /// 向QLineEdit打印字符串
+    /// 输入ASCII, 输出QString
+    /// e.g.
+    /// QByteArray soft_version = {0x53, 0x57, 0x3a, 0x30, 0x31, 0x2e, 0x30, 0x31};
+    /// QLineEdit *information_line = new QEditLine;
+    /// PrintStringInfo(*information_line, soft_version);  // information_line 输出 SW:01.01
+    ///
+    /// <function summary>
+    void PrintStringInfo(QLineEdit &line_edit, QByteArray &data);
+
+    /// <function summary>
+    /// 向QLineEdit打印字符串
+    /// 输入ASCII, 输出工作模式
+    /// e.g.
+    /// QByteArray work_mode = {0x01};
+    /// QLineEdit *information_line = new QEditLine;
+    /// PrintStringInfo(*information_line, work_mode);  // information_line 输出 正常模式
+    ///
+    /// <function summary>
+    void PrintWorkModeInfo(QLineEdit &line_edit, QByteArray &data);
+
+    /// <function summary>
+    /// 向QLineEdit打印字符串
+    /// 输入BCD, 输出日期
+    /// e.g.
+    /// QByteArray date_identifier = {0x22, 0x06, 0x10};
+    /// QLineEdit *information_line = new QEditLine;
+    /// PrintStringInfo(*information_line, date_identifier);  // information_line 输出 2022.6.10
+    ///
+    /// <function summary>
+    void PrintDataIdentInfo(QLineEdit &line_edit, QByteArray &data);
+
+    /// <function summary>
+    /// 解析DTC并输出至QTableWidget
+    ///
+    /// <function summary>
+    void DecodeDTC(QTableWidget &table_widget, QByteArray &data);
+
+    /// <function summary>
+    /// 绘制加速度曲线
+    ///
+    /// <function summary>
+    void SetupAccAxis(QCustomPlot *customPlot);
+
+    void PrintSerialData(QByteArray &serial_data);  // ecu_information_line_[0]
+    void PrintHardversionData(QByteArray &hard_version_data);  // ecu_information_line_[1]
+    void PrintSoftversionData(QByteArray &soft_version_data);
+
 };
+
 
 #endif // CENTERWINDOW_H

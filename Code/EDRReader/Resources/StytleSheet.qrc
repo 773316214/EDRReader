@@ -4,5 +4,35 @@
     </qresource>
     <qresource prefix="/image">
         <file>Image/EDRReader.ico</file>
+        <file>Image/can_setting1.png</file>
+        <file>Image/car.png</file>
+        <file>Image/clear1.png</file>
+        <file>Image/clear2.png</file>
+        <file>Image/clear3.png</file>
+        <file>Image/close1.png</file>
+        <file>Image/close2.png</file>
+        <file>Image/COM001.png</file>
+        <file>Image/connect_device.png</file>
+        <file>Image/device_management.png</file>
+        <file>Image/device_management2.png</file>
+        <file>Image/device_management3.png</file>
+        <file>Image/device_management4.png</file>
+        <file>Image/disconnect.png</file>
+        <file>Image/disconnect_device.png</file>
+        <file>Image/fault_simulation.png</file>
+        <file>Image/fault_simulation_2.png</file>
+        <file>Image/open.png</file>
+        <file>Image/save1.png</file>
+        <file>Image/save2.png</file>
+        <file>Image/send1.png</file>
+        <file>Image/send2.png</file>
+        <file>Image/send3.png</file>
+        <file>Image/serial_setting2.png</file>
+        <file>Image/serial1.png</file>
+        <file>Image/serial2.png</file>
+        <file>Image/uds_Icon1.png</file>
+        <file>Image/uds_icon2.png</file>
+        <file>Image/save_curve.jpg</file>
+        <file>Image/save_data.jpg</file>
     </qresource>
 </RCC>

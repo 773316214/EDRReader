@@ -2,10 +2,10 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.2
+** Version	: 1.0.3
 ** Author	: DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.06
+** Data     : 2022.06.02-2022.06.10
 **
 ****************************************************************************/
 
@@ -26,9 +26,15 @@ public:
 
 public:
     void InitUI();
+    void InitBar();
+
 
 private:
     CenterWindow *center_window_{nullptr};
     serial_port::MasterSerialThread *serial_{nullptr};
+
+    QMenuBar *menubar_{nullptr};  // a menu bar
+    QToolBar *toolbar_{nullptr};  // a tool bar
+    QStatusBar *statusbar_{nullptr};  // a status bar
 };
 #endif // MAINWINDOW_H
