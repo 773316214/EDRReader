@@ -2,10 +2,10 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.3
+** Version	: 1.0.4
 ** Author	: DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.10
+** Data     : 2022.06.02-2022.06.20
 **
 ****************************************************************************/
 #include "mainwindow.h"
@@ -88,18 +88,21 @@ void MainWindow::InitBar()
 #endif
     menubar_ = new QMenuBar(this);
     this->setMenuBar(menubar_);
-    QMenu *save_menu = new QMenu("Save(&S)", menubar_);
-    QMenu *help_menu = new QMenu("Help(&H)", menubar_);
+    QMenu *save_menu = new QMenu("保存(&S)", menubar_);
+    QMenu *help_menu = new QMenu("帮助(&H)", menubar_);
     menubar_->addMenu(save_menu);
     menubar_->addMenu(help_menu);
 
     //创建动作
-    QAction *save_data_action = new QAction("SaveData(&SD)");
-    save_data_action->setIcon(QIcon(":/image/Image/save_data.jpg"));  // 设置图标
+    QAction *save_edr_data_action = new QAction("EDRData(&SD)");
+    save_edr_data_action->setIcon(QIcon(":/image/Image/save_data.jpg"));  // 设置图标
+    QAction *save_acu_data_action = new QAction("ACUData(&SD)");
+//    save_acu_data_action->setIcon(QIcon(":/image/Image/save_data.jpg"));  // 设置图标
     QAction *save_curve_action = new QAction("SaveCurve(&SC)");
     save_curve_action->setIcon(QIcon(":/image/Image/save_curve.jpg"));
     //添加动作到新建菜单，QAction就会自动变成子菜单
-    save_menu->addAction(save_data_action);
+    save_menu->addAction(save_edr_data_action);
+    save_menu->addAction(save_acu_data_action);
     save_menu->addSeparator();                      //添加菜单分隔符
     save_menu->addAction(save_curve_action);
 
@@ -108,7 +111,8 @@ void MainWindow::InitBar()
     QAction *connect_action = new QAction("Connect(&C)");
     connect_action->setIcon(QIcon(":/image/Image/open.png"));
     toolbar_->addAction(connect_action);
-    toolbar_->addAction(save_data_action);
+    toolbar_->addAction(save_edr_data_action);
+    toolbar_->addAction(save_acu_data_action);
     toolbar_->addAction(save_curve_action);
 
     statusbar_ = new QStatusBar(this);

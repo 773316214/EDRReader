@@ -2,10 +2,10 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.3
+** Version	: 1.0.4
 ** Author	: DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.10
+** Data     : 2022.06.02-2022.06.20
 **
 ****************************************************************************/
 
@@ -154,7 +154,29 @@ void CenterWindow::InitUI()
         event_data_btn_[i] = new QPushButton(event_data_string[i]);
         event_data_box->addWidget(event_data_btn_[i], 1, i);
     }
-    print_event_data_table_ = new QTableWidget;
+    print_event_data_table_ = new QTableWidget(0, 2, this);
+    /// Sets the horizontal header labels using QStringList() << "名称" << "数据"
+    print_event_data_table_->setHorizontalHeaderLabels(QStringList() << "名称" << "数据");
+    /// Initiate item No editing possible.
+    print_event_data_table_->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    /// Resizes all columns based on the size hints of the delegate used to render each item in the columns.
+//    connect(this->print_event_data_table_, &QTableWidget::itemChanged
+//            , this->print_event_data_table_, &QTableWidget::resizeColumnsToContents);
+    print_event_data_table_->resizeColumnsToContents();
+    /// Resizes the given row based on the size hints of the delegate used to render each item in the row.
+    connect(print_event_data_table_, &QTableWidget::cellChanged
+            , print_event_data_table_, &QTableWidget::resizeRowToContents);
+    print_event_data_table_->setColumnWidth(0, 120);
+//    print_event_data_table_->verticalHeader()->setVisible(true);
+//    print_event_data_table_->verticalHeader()->setStretchLastSection(true);
+//    print_event_data_table_->verticalHeader()->setHighlightSections(true);
+    print_event_data_table_->horizontalHeader()->setStretchLastSection(true);
+//    print_event_data_table_->horizontalHeader()->setHighlightSections(true);
+//    print_event_data_table_->setSelectionBehavior(QAbstractItemView::SelectRows);
+//    print_event_data_table_->setSelectionMode(QAbstractItemView::SingleSelection);
+//    print_event_data_table_->verticalHeader()->setDefaultSectionSize(20);
+
+
     event_data_box->addWidget(print_event_data_table_, 2, 0, 10, 10);
     event_data_plot_layout->addLayout(event_data_box);
 
@@ -239,13 +261,13 @@ void CenterWindow::InitConnect()
         for (auto data : manufacture_data) {
             manufacture_data_.push_back(data);
         }
-        PrintDataIdentInfo(*ecu_information_line_[3], manufacture_data_);
+        PrintDateIdentInfo(*ecu_information_line_[3], manufacture_data_);
     });
 
 
     /// ECU Function Configration Data Identifier
     connect(this->ecu_information_btn_[4], &QPushButton::clicked, [=](){
-        char function_configration_data_identifier[1] = {0x03};
+        char function_configration_data_identifier[1] = {0x02};
         QByteArray function_configration_data_identifier_;
         for (auto data : function_configration_data_identifier) {
             function_configration_data_identifier_.push_back(data);
@@ -262,6 +284,27 @@ void CenterWindow::InitConnect()
             dtc_.push_back(data);
         }
         DecodeDTC(*print_dtc_table_, dtc_);
+    });
+
+    /// Decade EDR Data 0x22 FA 13
+    ///
+    connect(this->event_data_btn_[0], &QPushButton::clicked, [=](){
+        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA13.zudslog");
+        DecodeEventData(*print_event_data_table_, data);
+    });
+
+    /// Decade EDR Data 0x22 FA 14
+    ///
+    connect(this->event_data_btn_[1], &QPushButton::clicked, [=](){
+        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA14.zudslog");
+        DecodeEventData(*print_event_data_table_, data);
+    });
+
+    /// Decade EDR Data 0x22 FA 15
+    ///
+    connect(this->event_data_btn_[2], &QPushButton::clicked, [=](){
+        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA15.zudslog");
+        DecodeEventData(*print_event_data_table_, data);
     });
 }
 
@@ -294,7 +337,7 @@ void CenterWindow::PrintWorkModeInfo(QLineEdit &line_edit, QByteArray &data)
 
 }
 
-void CenterWindow::PrintDataIdentInfo(QLineEdit &line_edit, QByteArray &data)
+void CenterWindow::PrintDateIdentInfo(QLineEdit &line_edit, QByteArray &data)
 {
     bool ok;
 //    int year_int = QString::number(data[0], 16).toInt(&ok, 10);
@@ -353,21 +396,6 @@ void CenterWindow::DecodeDTC(QTableWidget &table_widget, QByteArray &data)
 
         }
     }
-
-//    QMap<QVector<unsigned char>, QString>::const_iterator dtc_ = DTC.constBegin();
-//    while(dtc_ != DTC.constEnd()){
-//        QString dtc_string;
-//        QByteArray dtc_array;
-//        for (int i = 0; i < dtc_.key().size(); i++) {
-//            dtc_array.push_back(static_cast<char>(dtc_.key()[i]));
-//        }
-//        dtc_string = dataToHex(dtc_array);
-//        int row_counter = table_widget.rowCount();
-//        table_widget.setRowCount(row_counter + 1);
-//        table_widget.setItem(row_counter, 0, new QTableWidgetItem(dtc_string));
-//        table_widget.setItem(row_counter, 2, new QTableWidgetItem(dtc_.value()));
-//        ++dtc_;
-//    }
 }
 
 void CenterWindow::SetupAccAxis(QCustomPlot *customPlot)
@@ -388,38 +416,1085 @@ void CenterWindow::SetupAccAxis(QCustomPlot *customPlot)
     customPlot->graph(0)->setPen(QPen(QColor(255, 100, 0)));
 //    customPlot->graph(0)->setBrush(QBrush(QPixmap("://skin/images/balboa.jpg"))); // fill with texture of specified image
     customPlot->graph(0)->setLineStyle(QCPGraph::lsLine);
-    customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 5));
+//    customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 5));
     customPlot->graph(0)->setName("EDR Acc");
 
     // setup for graph 1: key axis bottom, value axis left (those are the default axes)
     // will contain bottom maxwell-like function
     customPlot->addGraph();
-    customPlot->graph(1)->setPen(QPen(Qt::red));
+    customPlot->graph(1)->setPen(QPen(Qt::blue));
 //    customPlot->graph(1)->setBrush(QBrush(QPixmap("://skin/images/balboa.jpg"))); // same fill as we used for graph 0
-    customPlot->graph(1)->setLineStyle(QCPGraph::lsStepCenter);
-    customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssStar, Qt::red, Qt::white, 7));
+    customPlot->graph(1)->setLineStyle(QCPGraph::lsLine);
+//    customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssStar, Qt::red, Qt::white, 7));
     //customPlot->graph(1)->setErrorType(QCPGraph::etValue);
     customPlot->graph(1)->setName("ACU Acc");
 
-    /// Generate data
-    QVector<double> x0(126), y0(126);
-    for (int i = 0; i < y0.size(); ++i) // data for graph 0
-    {
-      x0[i] = i;
+    /// Generate EDR Accelerate data
+    QVector<double> x0, y0 = {
+        -19, -70, -22, 4, 10, -4, -49, -56, 26, -66, -18, -47,
+        -25, -31, -34, -39, -36, -33, -25, -36, -24, -32, -3,
+        -20, -41, -5, -1, -13, -5,6, -5, -1, -8, -2, -4,0, -2,
+        -1, 4, 8, 0, 2, 1, 0, 0, 0, -1, 3, -3, 0, -1, -2, 0, -1,
+        0, 1, 0, 1, 1, 1, 0, 0, 1, -1, -2, -1, -1, 0
+    };
+    QVector<double> x1, y1 = {
+        0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -2, -2, -2, -1, -1, -1, -6,
+        -20, -24, -118, -306, -635, -756, -606, -219, 16, -392, -182, -132,
+        -94, -216, -528, -498, -663, -621, -192, -9, -428, -727, -604, -623,
+        -741, -578, -471, -639, -602, -536, -551, -575, -600, -543, -549, -586,
+        -567, -542, -507, -523, -547, -566, -487, -550, -600, -412, -242, -393,
+        -394, -206, -464, -222, -144, -64, -37, -43, -100, -195, -164, -84, -42,
+        -27, -73, -133, -65, 33, -11, -58, -52, -51, -63, -49, -28, -55, -63, -51,
+        -41, 2, 41, 12, 67, 18, 28, 23, 21, 22, 31, 18, 20, 16, 5, 10, -3, -20, -8,
+        -15, 11, 10, -16, -13, -7, -9, -15, -21, -29, -26
+    };
+    /// Get max and min element in EDR accelerate
+    auto y0_max = std::max_element(y0.begin(), y0.end());
+    auto y0_min = std::min_element(y0.begin(), y0.end());
+    /// data for graph 0 EDR Accelerate
+    for (int i = 0; i < y0.size(); i++) {
+        x0.append(i * 2);
+    }
+    /// data for graph 1 ACU Accelerate
+    for (int i = 0; i < y1.size(); ++i) {
+      x1.append(i - 20);
 //      srand(static_cast<unsigned>(time(NULL)));
-      y0[i] = rand() % 120;
+      y1[i] = y1[i] / 16;
     }
     /// pass data points to graphs:
     customPlot->graph(0)->setData(x0, y0);
+    customPlot->graph(1)->setData(x1, y1);
     /// activate top and right axes, which are invisible by default:
-    customPlot->xAxis2->setVisible(true);
-    customPlot->yAxis2->setVisible(true);
+//    customPlot->xAxis2->setVisible(true);
+//    customPlot->yAxis2->setVisible(true);
     /// set ranges appropriate to show data:
-    customPlot->xAxis->setRange(0, 130);
-    customPlot->yAxis->setRange(0, 130);
-    customPlot->xAxis2->setRange(0, 3.0*M_PI);
-    customPlot->yAxis2->setRange(-70, 35);
+    customPlot->xAxis->setRange(-2, x1.size() + 2);
+    customPlot->yAxis->setRange(*y0_min - 2, *y0_max * 1.1);
+//    customPlot->xAxis2->setRange(0, 3.0 * M_PI);
+//    customPlot->yAxis2->setRange(-70, 35);
 
+}
+
+void CenterWindow::DecodeEventData(QTableWidget &table_widget, QByteArray &data)
+{
+  QString event_name = data.mid(1, 3).toHex().toUpper();
+  data.remove(0, 4);
+  /// Removes all the row and all its items from the table.
+  int row_counter = table_widget.rowCount();
+  while(row_counter--)
+    table_widget.removeRow(row_counter);
+
+  /// Creat EDR data map and populate it with original data.
+  QMap<QString, QVector<char>>data_original;
+  QMap<QString, QVector<int>>::const_iterator EDR_data_position_iterator = EDRDataPositionCHN.constBegin();
+  while(EDR_data_position_iterator != EDRDataPositionCHN.constEnd()){
+      QVector<char> data_;
+      /// get data from idex EDR_data_position_iterator.value(0) to idex EDR_data_position_iterator.value(1) in data
+      for(int i = EDR_data_position_iterator.value().at(0); i < EDR_data_position_iterator.value().at(1) + 1; i++){
+          data_.push_back(data[i]);
+        }
+      data_original.insert(EDR_data_position_iterator.key(), data_);
+      EDR_data_position_iterator++;
+    }
+
+  /// Parse the EDR data
+  EDRData data_processed;
+  EDRDataProcess(data_processed, data_original);
+
+  /// Print data to tablewidget
+  QMap<QString, QVector<QString>>::const_iterator data_processed_iterator = data_processed.EDR_data_CHN_str.constBegin();
+  while(data_processed_iterator != data_processed.EDR_data_CHN_str.constEnd()){
+      row_counter = table_widget.rowCount();
+      table_widget.setRowCount(row_counter + 1);
+      table_widget.setItem(row_counter, 0, new QTableWidgetItem(data_processed_iterator.key().mid(2)));  /// 打印元素名称
+      QString data_str = {};
+      for (auto str : data_processed_iterator.value()) {
+          data_str.push_back(str);
+          data_str.push_back(" ");
+        }
+      table_widget.setItem(row_counter, 1, new QTableWidgetItem(data_str));  /// 打印元素数据
+
+      data_processed_iterator++;
+    }
+
+  /// Save tabledidget data to .csv type file
+  SaveTablewidgetData(table_widget,"Output", event_name);
+
+}
+
+void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, QVector<char>> data_original)
+{
+    /// 解析数据
+    /// N 表示 EDR 读取的原始数据;
+    /// E 表示提取工具使用转化公式将 N 转译之后的 EDR 数据
+//    bool ok;
+    QMap<QString, QVector<char>>::const_iterator data_original_iterator = data_original.constBegin();
+    while(data_original_iterator != data_original.constEnd()){
+        if(data_original_iterator.key() == "01纵向 delta-V"){
+            /// 转化公式 E = N - 127
+            /// 0xFF: 无法获取值, 0xFE: 无效值
+            QVector<int> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                data_.push_back(static_cast<uint8_t>(data__) - 127);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+//                data_.push_back(data__ - 127);
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["01纵向 delta-V"] = data_str;
+        }
+        if(data_original_iterator.key() == "02最大记录纵向 delta-V"){
+            /// 转化公式 E = N - 127
+            /// 0xFF: 无法获取值, 0xFE: 无效值
+            QVector<int> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                data_.push_back(static_cast<uint8_t>(data__) - 127);
+            }
+                else data_.push_back(static_cast<uint8_t>(data__));
+//                data_.push_back(data__ - 127);
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["02最大记录纵向 delta-V"] = data_str;
+        }
+        if(data_original_iterator.key() == "03达到最大记录纵向 delta-V 时间"){
+            /// 转化公式 E = N - 127
+            /// 0xFF: 无法获取值, 0xFE: 无效值
+            QVector<double> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                data_.push_back(static_cast<uint8_t>(data__) * 2.5);
+            }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 2);
+            data_processed.EDR_data_CHN_str["03达到最大记录纵向 delta-V 时间"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "04削波标志"){
+            /// 转化公式 E = N
+            /// 第一个字节 0xFF: 无法获取值, 0xFE: 无效值
+            /// 第二个字节 0xFF: 无法获取值, 0xFE: 无效值
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["04削波标志"] = data_str;
+        }
+        if(data_original_iterator.key() == "05车辆速度"){
+            /// 转化公式 E = N
+            /// 范围 0 ~ 250
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["05车辆速度"] = data_str;
+        }
+        if(data_original_iterator.key() == "06行车制动"){
+            /// 转化公式 0 关闭  1 开启
+            /// 范围 不适用
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("Close");
+                    break;
+                case 1:
+                    data_str.push_back("Open");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["06行车制动"] = data_str;
+        }
+        if(data_original_iterator.key() == "07驾驶员安全带状态"){
+            /// 转化公式 0 系  1 未系
+            /// 范围 不适用
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("Buckled");
+                    break;
+                case 1:
+                    data_str.push_back("Unbuckled");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["07驾驶员安全带状态"] = data_str;
+        }
+        if(data_original_iterator.key() == "08加速踏板位置"){
+            /// 转化公式 E = N ，全开位置的百分比
+            ///
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["08加速踏板位置"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "09每分钟转数"){
+            /// 转化公式 E = N * 100
+            ///
+            QVector<uint16_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                data_.push_back((static_cast<uint16_t>(data__) & 0x00FF) * 100);
+                  }
+                else data_.push_back((static_cast<uint16_t>(data__) & 0x00FF));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["09每分钟转数"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "10事件中上电周期"){
+            ///  转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["10事件中上电周期"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "11读取时上电周期"){
+            ///  转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["11读取时上电周期"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "12事件数据记录完整状态"){
+            /// 转化公式  0 未完成 1 完成
+            ///
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["12事件数据记录完整状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "13本次事件距上次事件的时间间隔"){
+            /// 转化公式 E = N * 0.1
+            ///
+            QVector<double> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<double>(data__) * 0.1);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 2);
+            data_processed.EDR_data_CHN_str["13本次事件距上次事件的时间间隔"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "14车辆识别代号"){
+            /// 转化公式 ASCII
+            ///
+            QVector<QString> data_str;
+            QString str;
+            for(auto data__ : data_original_iterator.value()){
+                str.push_back(QChar(data__));
+            }
+            data_str.push_back(str);
+            data_processed.EDR_data_CHN_str["14车辆识别代号"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "15记录EDR数据的ECU硬件编号"){
+            /// 转化公式 ASCII
+            ///
+            QVector<QString> data_str;
+            QString str;
+            for(auto data__ : data_original_iterator.value()){
+                str.push_back(QChar(data__));
+            }
+            data_str.push_back(str);
+            data_processed.EDR_data_CHN_str["15记录EDR数据的ECU硬件编号"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "16记录EDR数据的ECU序列号"){
+            /// 转化公式 ASCII
+            ///
+            QVector<QString> data_str;
+            QString str;
+            for(auto data__ : data_original_iterator.value()){
+                str.push_back(QChar(data__));
+            }
+            data_str.push_back(str);
+            data_processed.EDR_data_CHN_str["16记录EDR数据的ECU序列号"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "17记录EDR数据的ECU软件编号"){
+            /// 转化公式 ASCII
+            ///
+            QVector<QString> data_str;
+            QString str;
+            for(auto data__ : data_original_iterator.value()){
+                str.push_back(QChar(data__));
+            }
+            data_str.push_back(str);
+            data_processed.EDR_data_CHN_str["17记录EDR数据的ECU软件编号"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "18纵向加速度"){
+            /// 转化公式 E = N - 127
+            ///
+            QVector<int> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__) - 127);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["18纵向加速度"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "19横向加速度"){
+            /// 转化公式 E = N - 127
+            ///
+            QVector<int> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__) - 127);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["19横向加速度"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "20横向 delta-V"){
+            /// 转化公式 E = N - 127
+            ///
+            QVector<int> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__) - 127);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["20横向 delta-V"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "21最大记录横向 delta-V"){
+            /// 转化公式 E = N - 127
+            ///
+            QVector<int> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__) - 127);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["21最大记录横向 delta-V"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "22最大记录合量 delta-V 平方"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(1) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(0)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["22最大记录合量 delta-V 平方"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "23达到最大记录横向 delta-V 时间"){
+            /// 转化公式 E = N * 2.5
+            ///
+            QVector<double> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<double>(data__) * 2.5);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 2);
+            data_processed.EDR_data_CHN_str["23达到最大记录横向 delta-V 时间"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "24达到最大记录合量 delta-V 平方的时间"){
+            /// 转化公式 E = N * 2.5
+            ///
+            QVector<double> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<double>(data__) * 2.5);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 2);
+            data_processed.EDR_data_CHN_str["24达到最大记录合量 delta-V 平方的时间"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "25横摆角速度"){
+            /// 转化公式 E = N * 0.1 -300
+            ///
+            QVector<double> data_;
+            QVector<uint16_t> data_uint16_t;
+            for (int i = 0;i < data_original_iterator.value().size(); i += 2) {
+
+                data_uint16_t.push_back((static_cast<uint16_t>(data_original_iterator.value().at(i + 1) << 8))
+                                        + (static_cast<uint16_t>(data_original_iterator.value().at(i)) & 0x00FF));
+
+            }
+            for(auto data__ : data_uint16_t){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<double>(data__) * 0.1 - 300);
+                }
+                else  data_.push_back(static_cast<uint16_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 2);
+            data_processed.EDR_data_CHN_str["25横摆角速度"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "26转向角度"){
+            /// 转化公式 E = N * 5 -780
+            ///
+            QVector<uint16_t> data_;
+            QVector<uint16_t> data_uint16_t;
+            for (int i = 0;i < data_original_iterator.value().size(); i += 2) {
+                data_uint16_t.push_back((static_cast<uint16_t>(data_original_iterator.value().at(i + 1) << 8))
+                                        + (static_cast<uint16_t>(data_original_iterator.value().at(i)) & 0x00FF));
+            }
+            for(auto data__ : data_uint16_t){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint16_t>(data__) * 5 - 780);
+                }
+                else  data_.push_back(static_cast<uint16_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["26转向角度"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "27Tend"){
+            /// 转化公式 E = N *2.5
+            ///
+            QVector<double> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<double>(data__) * 2.5);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 2);
+            data_processed.EDR_data_CHN_str["27Tend"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "28年"){
+            /// 转化公式 E = N + 2000
+            ///
+            QVector<uint16_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__) + static_cast<uint16_t>(2000));
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["28年"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "29月"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__));
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["29月"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "30日"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__));
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["30日"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "31时"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__));
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["31时"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "32分"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__));
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["32分"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "33秒"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__));
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["33秒"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "34挡位"){
+            /// 转化公式 0：P档，1：R档，2：N档，3：D档
+            ///
+            QVector<uint8_t> data_;
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch(data__){
+                case 0:
+                    data_str.push_back("P");
+                    break;
+                case 1:
+                    data_str.push_back("R");
+                    break;
+                case 2:
+                    data_str.push_back("N");
+                    break;
+                case 3:
+                    data_str.push_back("D");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+                data_.push_back(static_cast<uint8_t>(data__));
+            }
+            data_processed.EDR_data_CHN_str["34挡位"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "35发动机节气门位置"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__));
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["35发动机节气门位置"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "36制动踏板位置"){
+            /// 转化公式 E = N * 5
+            ///
+            QVector<uint8_t> data_;
+            for(auto data__ : data_original_iterator.value()){
+                if(IsValid(data__)){
+                    data_.push_back(static_cast<uint8_t>(data__) * 5);
+                }
+                else data_.push_back(static_cast<uint8_t>(data__));
+            }
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["36制动踏板位置"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "37驻车系统状态"){
+            /// 转化公式 0：开启，1：故障，2：关闭
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch(data__){
+                case 0:
+                    data_str.push_back("Open");
+                    break;
+                case 1:
+                    data_str.push_back("Malfunction");
+                    break;
+                case 2:
+                    data_str.push_back("Close");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                }
+            }
+            data_processed.EDR_data_CHN_str["37驻车系统状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "38转向信号开关状态"){
+            /// 转化公式 0：关闭，1：左，2：右，3：双闪
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch(data__){
+                case 0:
+                    data_str.push_back("Close");
+                    break;
+                case 1:
+                    data_str.push_back("Left");
+                    break;
+                case 2:
+                    data_str.push_back("Right");
+                    break;
+                case 3:
+                    data_str.push_back("DoubleFlash");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                }
+            }
+            data_processed.EDR_data_CHN_str["38转向信号开关状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "39驾驶员安全带预紧装置展开时间"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["39驾驶员安全带预紧装置展开时间"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "40驾驶员正面气囊展开时间(第一阶段)"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["40驾驶员正面气囊展开时间(第一阶段)"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "41驾驶员正面气囊展开时间(第二阶段)"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["41驾驶员正面气囊展开时间(第二阶段)"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "42驾驶员侧面气囊展开时间"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["42驾驶员侧面气囊展开时间"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "43驾驶员侧气帘展开时间"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["43驾驶员侧气帘展开时间"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "44前排乘员安全带状态"){
+            /// 转化公式 0：系，1：未系
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("Buckled");
+                    break;
+                case 1:
+                    data_str.push_back("UnBuckled");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["44前排乘员安全带状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "45前排乘员安全带预紧器装置展开时间"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["45前排乘员安全带预紧器装置展开时间"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "46前排乘员正面气囊抑制状态"){
+            /// 转化公式 0：关闭(气囊可用)，1：开启(气囊不可用/抑制)
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("Close");
+                    break;
+                case 1:
+                    data_str.push_back("Open");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["46前排乘员正面气囊抑制状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "47前排乘员正面气囊展开时间(第一阶段)"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["47前排乘员正面气囊展开时间(第一阶段)"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "48前排乘员正面气囊展开时间(第二阶段)"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["48前排乘员正面气囊展开时间(第二阶段)"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "49前排乘员侧气囊展开时间"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["49前排乘员侧气囊展开时间"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "50前排乘员侧气帘展开时间"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["50前排乘员侧气帘展开时间"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "51乘员保护系统报警状态"){
+            /// 转化公式 0：关闭，1：开启
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("Close");
+                    break;
+                case 1:
+                    data_str.push_back("Open");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["51乘员保护系统报警状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "52轮胎压力监测系统报警状态"){
+            /// 转化公式 0：关闭，1：开启
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("Close");
+                    break;
+                case 1:
+                    data_str.push_back("Open");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["52轮胎压力监测系统报警状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "53制动系统报警状态"){
+            /// 转化公式 0：关闭，1：开启
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("Close");
+                    break;
+                case 1:
+                    data_str.push_back("Open");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["53制动系统报警状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "54定速巡航系统状态"){
+            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 253：自定义
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("OpenButNotActivated");
+                    break;
+                case 1:
+                    data_str.push_back("OpenAndActivated");
+                    break;
+                case 2:
+                    data_str.push_back("CommandClosed");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["54定速巡航系统状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "55自适应巡航系统状态"){
+            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 253：自定义
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("OpenButNotActivated");
+                    break;
+                case 1:
+                    data_str.push_back("OpenAndActivated");
+                    break;
+                case 2:
+                    data_str.push_back("CommandClosed");
+                    break;
+                case 3:
+                    data_str.push_back("Malfunction");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["55自适应巡航系统状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "56防抱制动系统状态"){
+            /// 转化公式 0: 未激活，1：激活，2: 故障，3 ~ 253：自定义
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("NotActivated");
+                    break;
+                case 1:
+                    data_str.push_back("Actiavted");
+                    break;
+                case 2:
+                    data_str.push_back("Malfunction");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["56防抱制动系统状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "57自动紧急制动系统状态"){
+            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 256：自定义
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("OpenButNotActivated");
+                    break;
+                case 1:
+                    data_str.push_back("OpenAndActivated");
+                    break;
+                case 2:
+                    data_str.push_back("CommandClosed");
+                    break;
+                case 3:
+                    data_str.push_back("Malfunction");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["57自动紧急制动系统状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "58电子稳定性控制系统状态"){
+            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 256：自定义
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("OpenButNotActivated");
+                    break;
+                case 1:
+                    data_str.push_back("OpenAndActivated");
+                    break;
+                case 2:
+                    data_str.push_back("CommandClosed");
+                    break;
+                case 3:
+                    data_str.push_back("Malfunction");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["58电子稳定性控制系统状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "59牵引力控制系统状态"){
+            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 256：自定义
+            ///
+            QVector<QString> data_str;
+            for(auto data__ : data_original_iterator.value()){
+                switch (data__) {
+                case 0 :
+                    data_str.push_back("OpenButNotActivated");
+                    break;
+                case 1:
+                    data_str.push_back("OpenAndActivated");
+                    break;
+                case 2:
+                    data_str.push_back("CommandClosed");
+                    break;
+                case 3:
+                    data_str.push_back("Malfunction");
+                    break;
+                default:
+                    data_str.push_back(QString::number(static_cast<uint8_t>(data__), 10));
+                    break;
+                }
+            }
+            data_processed.EDR_data_CHN_str["59牵引力控制系统状态"] = data_str;
+        }
+
+        if(data_original_iterator.key() == "60事件前同步计时时间"){
+            /// 转化公式 E = N
+            ///
+            QVector<uint16_t> data_;
+            data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
+                            + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
+            QVector<QString> data_str = DataToString(data_, 10);
+            data_processed.EDR_data_CHN_str["60事件前同步计时时间"] = data_str;
+        }
+        data_original_iterator++;
+    }
+}
+
+bool CenterWindow::SaveTablewidgetData(QTableWidget &table_widget, QString dir_name, QString file_name)
+{
+  QDir dir(dir_name);
+  QString full_dir_name = QDir::currentPath() + "/" + dir_name;
+  if(!dir.exists()){
+     dir.mkdir(full_dir_name);
+    }
+  QString time_str = "_" + QDateTime::currentDateTime().toString("hh:mm:s");
+  file_name += time_str.replace(":", "-");
+  QString dir_file = full_dir_name + "/" + file_name + ".csv";
+  QFile file(dir_file);
+  bool ret = file.open(QIODevice::Truncate | QIODevice::ReadWrite);
+  if(!ret)
+  {
+      qDebug() << "open failure";
+      return ret;
+  }
+  QTextStream stream(&file);
+  QString contents;
+  contents = QDateTime::currentDateTime().toString("yyyy.MM.dd-hh:mm:s") + "\n";
+  /// 写入头
+  QHeaderView * header = table_widget.horizontalHeader();
+  if(nullptr != header){
+      for (int i = 0; i < header->count(); i++) {
+          QTableWidgetItem *item = table_widget.horizontalHeaderItem(i);
+          if(nullptr != item){
+              contents += item->text() + ",";
+            }
+        }
+      contents += "\n";
+    }
+
+  /// 写内容
+  for (int row = 0; row < table_widget.rowCount(); row++){
+      for(int column = 0; column < table_widget.columnCount(); column++){
+          QTableWidgetItem * item = table_widget.item(row, column);
+          if(nullptr != item){
+              QString str = item->text();
+              str.replace(",", " ");
+              contents += str + ",";
+            }
+        }
+      contents += "\n";
+    }
+  stream << contents;
+  file.close();
+  return true;
 }
 
 void CenterWindow::PrintSerialData(QByteArray &serial_data)
@@ -471,4 +1546,107 @@ QByteArray dataToHex(const QByteArray &data, const QString &separator, const QSt
         }
     }
     return list.join("").toUtf8();
+}
+
+QByteArray ReadFromFile(QString path)
+{
+    QFile file(path);  /// 文件地址
+    if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        return nullptr;
+    }
+    QByteArray data;
+    while(!file.atEnd())
+    {
+        bool ok;
+        QByteArray array = file.readAll();
+        for(int i = 0; i < array.size(); i += 3){
+            QString data_str;
+            data_str.push_back(array.at(i));
+            data_str.push_back(array.at(i + 1));
+            data.push_back(static_cast<char>(data_str.toInt(&ok, 16)));
+        }
+
+    }
+    return data;
+}
+
+QVector<QString> DataToString(QByteArray array, int base)
+{
+    QVector<QString> str;
+    for(auto data : array){
+        str.push_back(QString::number(data, base));
+//        if(data != ' '){
+//        }
+//        else str.push_back(data);
+    }
+    return str;
+}
+
+QVector<QString> DataToString(QVector<int> array, int base)
+{
+    QVector<QString> str;
+    for(auto data : array){
+        QString str_ = QString::number(data, base);
+//        if(str_.size() < 2)
+//            str_.prepend('0');
+        str.push_back(str_);
+    }
+    return str;
+}
+
+QVector<QString> DataToString(QVector<double> array, int precision)
+{
+    QVector<QString> str;
+    for(auto data : array){
+        QString str_ = QString::number(data, 'f', precision);
+//        if(str_.size() < 2)
+//            str_.prepend('0');
+        str.push_back(str_);
+    }
+    return str;
+}
+
+QVector<QString> DataToString(char array, int precision)
+{
+    QVector<QString> str;
+    QString str_ = QString::number(array, precision);
+//    if(str_.size() < 2)
+//        str_.prepend('0');
+    str.push_back(str_);
+    return str;
+}
+
+QVector<QString> DataToString(QVector<uint8_t> array, int precision)
+{
+    QVector<QString> str;
+    for(auto data : array){
+        QString str_ = QString::number(data, precision);
+//        if(str_.size() < 2)
+//            str_.prepend('0');
+        str.push_back(str_);
+    }
+    return str;
+}
+
+QVector<QString> DataToString(QVector<uint16_t> array, int precision)
+{
+    QVector<QString> str;
+    for(auto data : array){
+        QString str_ = QString::number(data, precision);
+//        if(str_.size() < 2)
+//            str_.prepend('0');
+        str.push_back(str_);
+    }
+    return str;
+}
+
+bool IsValid(char data)
+{
+    return ((data != static_cast<char>(0xFF)) && (data != static_cast<char>(0xFE))) ? true : false;
+}
+
+bool IsValid(uint16_t data)
+{
+    return ((data != static_cast<uint16_t>(0xFFFF)) && (data != static_cast<uint16_t>(0xFFFE))) ? true : false;
 }

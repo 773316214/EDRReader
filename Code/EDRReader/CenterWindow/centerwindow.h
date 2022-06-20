@@ -2,10 +2,10 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.3
+** Version	: 1.0.4
 ** Author	: DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.10
+** Data     : 2022.06.02-2022.06.20
 **
 ****************************************************************************/
 
@@ -17,10 +17,21 @@
 #include <QLineEdit>
 #include <QTableWidget>
 #include <QLabel>
+#include "dataconfiguration.h"
 
 #include "QCustomPlot/fcustomplot.h"
 
 extern QByteArray dataToHex(const QByteArray &data, const QString &separator = " ", const QString &prefix = "");
+extern QByteArray ReadFromFile(QString path);
+extern QVector<QString> DataToString(QByteArray array, int base);
+extern QVector<QString> DataToString(QVector<int> array, int base);
+extern QVector<QString> DataToString(QVector<double> array, int precision);
+extern QVector<QString> DataToString(char array, int precision);
+extern QVector<QString> DataToString(QVector<uint8_t> array, int precision);
+extern QVector<QString> DataToString(QVector<uint16_t> array, int precision);
+
+extern bool IsValid(char data);
+extern bool IsValid(uint16_t data);
 
 class CenterWindow : public QWidget
 {
@@ -31,6 +42,8 @@ public:
 public:
     void InitUI();
     void InitConnect();
+    void EDRDataProcess(EDRData &data_processed, const QMap<QString, QVector<char> > data_original);
+
 private:
     QWidget* base_widget_{nullptr};  // 基础窗体
 
@@ -101,7 +114,7 @@ public slots:
     /// PrintStringInfo(*information_line, date_identifier);  // information_line 输出 2022.6.10
     ///
     /// <function summary>
-    void PrintDataIdentInfo(QLineEdit &line_edit, QByteArray &data);
+    void PrintDateIdentInfo(QLineEdit &line_edit, QByteArray &data);
 
     /// <function summary>
     /// 解析DTC并输出至QTableWidget
@@ -114,6 +127,18 @@ public slots:
     ///
     /// <function summary>
     void SetupAccAxis(QCustomPlot *customPlot);
+
+    /// <function summary>
+    /// Decode EDR data
+    ///
+    /// <function summary>
+    void DecodeEventData(QTableWidget &table_widget, QByteArray &data);
+
+    /// <function summary>
+    /// Save tablewidget data
+    ///
+    /// <function summary>
+    bool SaveTablewidgetData(QTableWidget &table_widget, QString dir_name, QString file_name);
 
     void PrintSerialData(QByteArray &serial_data);  // ecu_information_line_[0]
     void PrintHardversionData(QByteArray &hard_version_data);  // ecu_information_line_[1]

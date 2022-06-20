@@ -2,10 +2,10 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.3
+** Version	: 1.0.4
 ** Author	: DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.10
+** Data     : 2022.06.02-2022.06.20
 **
 ****************************************************************************/
 

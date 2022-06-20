@@ -30,6 +30,7 @@ SOURCES += \
 
 HEADERS += \
     CenterWindow/centerwindow.h \
+    CenterWindow/dataconfiguration.h \
     Log/flog.h \
     Log/src/easylogging++.h \
     QCustomPlot/fcustomplot.h \
@@ -45,3 +46,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     Resources/StytleSheet.qrc
+
+DISTFILES += \
+    Test/FA13.zudslog \
+    Test/FA14.zudslog \
+    Test/FA15.zudslog
