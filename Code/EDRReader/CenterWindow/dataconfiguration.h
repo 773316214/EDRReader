@@ -4,10 +4,10 @@
 #include <QList>
 #include <QVariant>
 
-typedef unsigned char uchar;
+typedef unsigned char UChar;
 
-/// EDR数据位置信息
-/// {"Description",{a, b}}  a:Starting position, b:End position
+// EDR数据位置信息
+// {"Description",{a, b}}  a:Starting position, b:End position
 
 const QMap<QString, QVector<int>> EDRDataPosition = {
     {"01Vertical deltaV", {0, 25}}
@@ -137,44 +137,44 @@ const QMap<QString, QVector<int>> EDRDataPositionCHN = {
 
 #if 0
 struct EDRData {
-    QVector<int> vertical_deltaV[26]{};  /// 纵向delta-V
-    QVector<int> max_record_length_vertical_deltaV[1]{};  /// 最大记录纵向 delta-V
-    QVector<int> reach_max_record_length_vertical_deltaV_time[1]{};  ///
-    QVector<int> clipping_flag[1]{};  ///
-    QVector<int> vehicle_speed[11]{};  ///
-    QVector<char> service_brake[11]{};  ///
-    QVector<char> driver_seat_belt_status[1]{};  /// 驾驶员安全带状态
-    QVector<char> accelerator_pedal_position[11]{};   /// 加速踏板位置，全开位置百分比
-    QVector<int>  revolutions_per_minute[11]{};   /// 每分钟转数
-    QVector<uint> power_up_period_in_the_event[1]{};   /// 事件中上电周期
-    QVector<uint> power_up_period_when_reading[1]{};   /// 读取时上电周期
-    QVector<char> event_data_record_complete_status[1]{};  ///
+    QVector<int> vertical_deltaV[26]{};  // 纵向delta-V
+    QVector<int> max_record_length_vertical_deltaV[1]{};  // 最大记录纵向 delta-V
+    QVector<int> reach_max_record_length_vertical_deltaV_time[1]{};  //
+    QVector<int> clipping_flag[1]{};  //
+    QVector<int> vehicle_speed[11]{};  //
+    QVector<char> service_brake[11]{};  //
+    QVector<char> driver_seat_belt_status[1]{};  // 驾驶员安全带状态
+    QVector<char> accelerator_pedal_position[11]{};   // 加速踏板位置，全开位置百分比
+    QVector<int>  revolutions_per_minute[11]{};   // 每分钟转数
+    QVector<uint> power_up_period_in_the_event[1]{};   // 事件中上电周期
+    QVector<uint> power_up_period_when_reading[1]{};   // 读取时上电周期
+    QVector<char> event_data_record_complete_status[1]{};  //
     QVector<double> time_interval_between_this_event_and_the_last_event[1]{};
-    QVector<char> vehicle_identification_number[17]{};  /// 车辆识别代号
-    QVector<char> ECU_hardware_number_for_recording_EDR_data[64]{};  /// 记录EDR数据的ECU硬件版本号
+    QVector<char> vehicle_identification_number[17]{};  // 车辆识别代号
+    QVector<char> ECU_hardware_number_for_recording_EDR_data[64]{};  // 记录EDR数据的ECU硬件版本号
     QVector<char> ECU_serial_number_for_recording_EDR_data[64]{};
     QVector<char> ECU_software_number_for_recording_EDR_data[64]{};
-    QVector<int> longitudinal_acceleration[126]{};  /// 纵向加速度
-    QVector<int> lateral_acceleration[126]{};  /// 横向加速度
-    QVector<int> lateral_deltaV[26]{};  /// 横向delta-V
-    QVector<int> maximum_record_lateral_deltaV[1]{};  /// 最大记录横向 delta-V
-    QVector<int> square_of_the_maximum_recorded_horizontal_deltaV[1]{};  /// 最大记录合量 delta-V 平方
-    QVector<double> time_to_reach_the_maximum_recorded_horizontal_deltaV[1]{};  /// 达到最大记录横向 delta-V 时间
-    QVector<double> time_to_reach_the_maximum_record_total_deltaV_square[1]{};  /// 达到最大记录合量 delta-V 平方的时间
-    QVector<double> yaw_rate[11]{};  /// 横摆角速度
-    QVector<int> steering_angle[11]{};  /// 转向角度
-    QVector<double> Tend[1]{};  /// Tend
-    QVector<uint> year[1]{};  /// 年
-    QVector<char> month[1]{};  /// 月
-    QVector<char> day[1]{};  /// 日
-    QVector<char> hour[1]{};  /// 时
-    QVector<char> minute[1]{};  /// 分
-    QVector<char> second[1]{};  /// 秒
-    QVector<uchar> gear[11]{};  /// 挡位
-    QVector<char> engine_throttle_position[11]{};  /// 发动机节气门位置，全开位置百分比
-    QVector<uchar> brake_pedal_position[11]{};  /// 制动踏板位置
-    QVector<char> parking_system_status[11]{};  /// 驻车系统状态
-    QVector<char> turn_signal_switch_state[11]{};  /// 转向开关状态
+    QVector<int> longitudinal_acceleration[126]{};  // 纵向加速度
+    QVector<int> lateral_acceleration[126]{};  // 横向加速度
+    QVector<int> lateral_deltaV[26]{};  // 横向delta-V
+    QVector<int> maximum_record_lateral_deltaV[1]{};  // 最大记录横向 delta-V
+    QVector<int> square_of_the_maximum_recorded_horizontal_deltaV[1]{};  // 最大记录合量 delta-V 平方
+    QVector<double> time_to_reach_the_maximum_recorded_horizontal_deltaV[1]{};  // 达到最大记录横向 delta-V 时间
+    QVector<double> time_to_reach_the_maximum_record_total_deltaV_square[1]{};  // 达到最大记录合量 delta-V 平方的时间
+    QVector<double> yaw_rate[11]{};  // 横摆角速度
+    QVector<int> steering_angle[11]{};  // 转向角度
+    QVector<double> Tend[1]{};  // Tend
+    QVector<uint> year[1]{};  // 年
+    QVector<char> month[1]{};  // 月
+    QVector<char> day[1]{};  // 日
+    QVector<char> hour[1]{};  // 时
+    QVector<char> minute[1]{};  // 分
+    QVector<char> second[1]{};  // 秒
+    QVector<uchar> gear[11]{};  // 挡位
+    QVector<char> engine_throttle_position[11]{};  // 发动机节气门位置，全开位置百分比
+    QVector<uchar> brake_pedal_position[11]{};  // 制动踏板位置
+    QVector<char> parking_system_status[11]{};  // 驻车系统状态
+    QVector<char> turn_signal_switch_state[11]{};  // 转向开关状态
 
 };
 #endif

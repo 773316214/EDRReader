@@ -2,10 +2,10 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.4
-** Author	: DuanZhaobing
+** Version  : 1.0.5
+** Author   : DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.20
+** Data     : 2022.06.02-2022.06.24
 **
 ****************************************************************************/
 #include "mainwindow.h"
@@ -13,6 +13,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , center_window_( new CenterWindow)
     , serial_(new serial_port::MasterSerialThread)
 {
     el::Loggers::removeFlag(el::LoggingFlag::NewLineForContainer);
@@ -22,11 +23,11 @@ MainWindow::MainWindow(QWidget *parent)
     LogHandler* logHandler = el::Helpers::logDispatchCallback<LogHandler>("LogHandler");
     logHandler->setEnabled(false);
 
-    InitUI();
+//    InitUI();
     setCentralWidget(center_window_);  // 设置主窗体
 
     InitBar();  // Initial menu bar tool bar and status ber
-
+    ConnectSignal();
     resize(1080, 720);
 }
 
@@ -100,6 +101,8 @@ void MainWindow::InitBar()
 //    save_acu_data_action->setIcon(QIcon(":/image/Image/save_data.jpg"));  // 设置图标
     QAction *save_curve_action = new QAction("SaveCurve(&SC)");
     save_curve_action->setIcon(QIcon(":/image/Image/save_curve.jpg"));
+    QAction *clear_data_cation = new QAction("ClearECUInf");  // 设置清除ECU信息
+    clear_data_cation->setIcon(QIcon(":/image/Image/clear3.png"));
     //添加动作到新建菜单，QAction就会自动变成子菜单
     save_menu->addAction(save_edr_data_action);
     save_menu->addAction(save_acu_data_action);
@@ -114,8 +117,59 @@ void MainWindow::InitBar()
     toolbar_->addAction(save_edr_data_action);
     toolbar_->addAction(save_acu_data_action);
     toolbar_->addAction(save_curve_action);
-
+    toolbar_->addAction(clear_data_cation);
     statusbar_ = new QStatusBar(this);
     this->setStatusBar(statusbar_);
+
+    connect(clear_data_cation, &QAction::triggered, center_window_, &CenterWindow::ClearECUInf);
+
+}
+
+void MainWindow::ConnectSignal()
+{
+  connect(serial_, &serial_port::MasterSerialThread::ResponseOrRequest, center_window_, &CenterWindow::ReceivedDataHandle);
+  connect(center_window_->ecu_information_btn_[0], &QPushButton::clicked,[this](){
+     serial_->TransAction(100, serial_port::MasterSerialThread::ECUSerialNumberDataIdentifier);
+    });
+  connect(center_window_->ecu_information_btn_[1], &QPushButton::clicked,[this](){
+     serial_->TransAction(100, serial_port::MasterSerialThread::ECUHardWareVersionNumberDataIdentifier);
+    });
+  connect(center_window_->ecu_information_btn_[2], &QPushButton::clicked,[this](){
+     serial_->TransAction(100, serial_port::MasterSerialThread::ECUSoftWareVersionNumberDataIdentifier);
+    });
+  connect(center_window_->ecu_information_btn_[3], &QPushButton::clicked,[this](){
+     serial_->TransAction(100, serial_port::MasterSerialThread::ECUManufacturingDateOfProduction);
+    });
+  connect(center_window_->ecu_information_btn_[4], &QPushButton::clicked,[this](){
+     serial_->TransAction(100, serial_port::MasterSerialThread::functionConfigrationDataIdentifier);
+    });
+  connect(center_window_->clear_dtc_btn, &QPushButton::clicked,[this](){
+      serial_->TransAction(100, serial_port::MasterSerialThread::clearDiagnosticInformation);
+    });
+  connect(center_window_->read_dtc_btn, &QPushButton::clicked,[this](){
+      serial_->TransAction(100, serial_port::MasterSerialThread::reportDTCByStatusMask);
+    });
+  connect(center_window_->event_data_btn_[0], &QPushButton::clicked,[this](){
+      serial_->TransAction(300, serial_port::MasterSerialThread::eventData13);
+    });
+  connect(center_window_->event_data_btn_[1], &QPushButton::clicked,[this](){
+      serial_->TransAction(300, serial_port::MasterSerialThread::eventData14);
+    });
+  connect(center_window_->event_data_btn_[2], &QPushButton::clicked,[this](){
+      serial_->TransAction(300, serial_port::MasterSerialThread::eventData15);
+    });
+  connect(center_window_->event_data_btn_[3], &QPushButton::clicked,[this](){
+      serial_->TransAction(300, serial_port::MasterSerialThread::eventData16);
+    });
+  connect(center_window_->event_data_btn_[4], &QPushButton::clicked,[this](){
+      serial_->TransAction(300, serial_port::MasterSerialThread::eventData17);
+    });
+  connect(center_window_->event_data_btn_[5], &QPushButton::clicked,[this](){
+      serial_->TransAction(300, serial_port::MasterSerialThread::eventData18);
+    });
+  connect(center_window_->event_data_btn_[6], &QPushButton::clicked,[this](){
+      serial_->TransAction(300, serial_port::MasterSerialThread::eventData19);
+    });
+
 }
 

@@ -25,6 +25,7 @@ SOURCES += \
     QCustomPlot/qcustomplot.cpp \
     Serial/masterthread.cpp \
     Serial/slavethread.cpp \
+    Universal/universal.cpp \
     main.cpp \
     mainwindow.cpp
 
@@ -37,6 +38,7 @@ HEADERS += \
     QCustomPlot/qcustomplot.h \
     Serial/masterthread.h \
     Serial/slavethread.h \
+    Universal/universal.h \
     mainwindow.h
 
 # Default rules for deployment.

@@ -2,10 +2,10 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.4
-** Author	: DuanZhaobing
+** Version  : 0.0.5
+** Author   : DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.20
+** Data     : 2022.06.02-2022.06.24
 **
 ****************************************************************************/
 
@@ -18,12 +18,16 @@
 #include <cstdlib>
 #include <time.h>
 #include "Log/flog.h"
+#include "Universal/universal.h"
+#include "Serial/masterthread.h"
 
-typedef unsigned int data_type;
+typedef unsigned int DataType;
 
 CenterWindow::CenterWindow(QWidget *parent) : QWidget(parent)
 {
     InitUI();
+    InitPlot(*acc_axis_, "EDR_ACC", "ACU_ACC");
+    InitPlot(*data_axis_, "VehicleSpeed", "_");
     InitConnect();
 
 }
@@ -70,100 +74,101 @@ void CenterWindow::InitUI()
     base_widget_ = new QWidget(this);
     QHBoxLayout* base_layout = new QHBoxLayout;  //
     QVBoxLayout *info_fault_info_layout = new QVBoxLayout;
-    /// ECU information
-    /// ——————QFormLayout(ECU_information_form)——————————————————
-    ///|
-    ///|     |序列号|        serial_line_
-    ///|     |硬件版本号|   hardware_version_line_
-    ///|     |软件版本号|     software_version_line_
-    ///|     |生产日期|       manufacturing_date_line_
-    ///|     |功能配置字|     function_configration_data_line_
-    ///|_________________________________________________________
-    QFormLayout *ecu_information_form = new QFormLayout;   /// 放置ECU信息控件 表单
+    // ECU information
+    // ——————QFormLayout(ECU_information_form)——————————————————
+    //|
+    //|     |序列号|        serial_line_
+    //|     |硬件版本号|   hardware_version_line_
+    //|     |软件版本号|     software_version_line_
+    //|     |生产日期|       manufacturing_date_line_
+    //|     |功能配置字|     function_configration_data_line_
+    //|_________________________________________________________
+    QFormLayout *ecu_information_form = new QFormLayout;   // 放置ECU信息控件 表单
     QStringList ecu_information_string = {"序列号", "硬件版本号", "软件版本号", "生产日期", "功能配置字"};
     for (int i = 0; i < 5; i++) {
         ecu_information_btn_[i] = new QPushButton(ecu_information_string[i]);
-        //       ecu_information_btn_[i]->setMaximumWidth(100);
         ecu_information_line_[i] = new QLineEdit;
-        //       ecu_information_line_[i]->setMaximumWidth(120);
         ecu_information_form->addRow(ecu_information_btn_[i], ecu_information_line_[i]);
     }
     ecu_information_form->setMargin(0);
     info_fault_info_layout->addLayout(ecu_information_form);
 
-    ///Fault information
-    /// ——————QFormLayout(ECU_information_form)——————————————————
-    ///|
-    ///|     |           清除故障码           |
-    ///|     |           读取故障码           |
-    ///|     __________print_dtc_table________
-    ///|     |   故障码   |        含义       |
-    ///|     --------------------------------
-    ///|     |           |                   |
-    ///|     --------------------------------
-    ///|     |           |                   |
-    ///|     --------------------------------
-    ///|     |           |                   |
-    ///|     --------------------------------
-    ///|     |           |                   |
-    ///|     --------------------------------
+    //Fault information
+    // ——————QFormLayout(ECU_information_form)——————————————————
+    //|
+    //|     |           清除故障码           |
+    //|     |           读取故障码           |
+    //|     __________print_dtc_table________
+    //|     |   故障码   |        含义       |
+    //|     |-----------|-------------------|
+    //|     |           |                   |
+    //|     |-----------|-------------------|
+    //|     |           |                   |
+    //|     |-----------|-------------------|
+    //|     |           |                   |
+    //|     |-----------|-------------------|
+    //|     |           |                   |
+    //|     |-----------|-------------------|
     QVBoxLayout *fault_information_box = new QVBoxLayout;
     clear_dtc_btn = new QPushButton("清除故障码");
     //   clear_dtc_btn->setMaximumWidth(200);
     read_dtc_btn = new QPushButton("读取故障码");
     //   read_dtc_btn->setMaximumWidth(200);
-    /// Creates a new table view with the 0 rows and 3 columns, and with the given parent.
+    clear_dtc_inf_btn_ = new QPushButton("清空数据");
+    // Creates a new table view with the 0 rows and 3 columns, and with the given parent.
     print_dtc_table_ = new QTableWidget(0, 3, this);
-    /// Sets the horizontal header labels using QStringList() << "DTC" << "Status" << "Description   "
+    // Sets the horizontal header labels using QStringList() << "DTC" << "Status" << "Description   "
     print_dtc_table_->setHorizontalHeaderLabels(QStringList() << "DTC" << "Status" << "Description   ");
-    /// Initiate item No editing possible.
+    // Initiate item No editing possible.
     print_dtc_table_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    /// Resizes all columns based on the size hints of the delegate used to render each item in the columns.
+    // Resizes all columns based on the size hints of the delegate used to render each item in the columns.
     print_dtc_table_->resizeColumnsToContents();
-    /// Resizes all rows based on the size hints of the delegate used to render each item in the rows.
+    // Resizes all rows based on the size hints of the delegate used to render each item in the rows.
     print_dtc_table_->resizeRowsToContents();
+    print_dtc_table_->horizontalHeader()->setStretchLastSection(true);
     //   print_dtc_table_->setMaximumWidth(200);
 
     fault_information_box->addWidget(clear_dtc_btn);
     fault_information_box->addWidget(read_dtc_btn);
+    fault_information_box->addWidget(clear_dtc_inf_btn_);
     fault_information_box->addWidget(print_dtc_table_);
     info_fault_info_layout->addLayout(fault_information_box);
 
-    ///Event data
-    /// —————————————QGridLayout(event_data_box)—————————————
-    ///| 事件数据
-    ///|     |FA13||FA14||FA15||0216||0217||0218||0219|
-    ///|     ------------print_event_data_table_-------------
-    ///|     |               |                              |
-    ///|     -----------------------------------------------|
-    ///|     |               |                              |
-    ///|     -----------------------------------------------|
-    ///|     |               |                              |
-    ///|     -----------------------------------------------|
-    ///|     |               |                              |
-    ///|     -----------------------------------------------|
-    ///|     |               |                              |
-    ///|     |----------------------------------------------|
-    ///|
+    //Event data
+    // —————————————QGridLayout(event_data_box)—————————————
+    //| 事件数据
+    //|     |FA13||FA14||FA15||0216||0217||0218||0219|
+    //|     ------------print_event_data_table_-------------
+    //|     |               |                              |
+    //|     |----------------------------------------------|
+    //|     |               |                              |
+    //|     |----------------------------------------------|
+    //|     |               |                              |
+    //|     |----------------------------------------------|
+    //|     |               |                              |
+    //|     |----------------------------------------------|
+    //|     |               |                              |
+    //|     |----------------------------------------------|
+    //|
     QVBoxLayout *event_data_plot_layout = new QVBoxLayout;
     QGridLayout *event_data_box = new QGridLayout;
     QLabel *event_data_label = new QLabel("事件数据");
     event_data_box->addWidget(event_data_label,0, 0);
-    QStringList event_data_string = {"FA13", "FA14", "FA15", "0216", "0217", "0218", "0219"};
+    QStringList event_data_string = {"FA13", "FA14", "FA15", "0216", "0217", "0218", "0219", "清空"};
     for (int i = 0; i < event_data_string.size(); i++) {
         event_data_btn_[i] = new QPushButton(event_data_string[i]);
         event_data_box->addWidget(event_data_btn_[i], 1, i);
     }
     print_event_data_table_ = new QTableWidget(0, 2, this);
-    /// Sets the horizontal header labels using QStringList() << "名称" << "数据"
+    // Sets the horizontal header labels using QStringList() << "名称" << "数据"
     print_event_data_table_->setHorizontalHeaderLabels(QStringList() << "名称" << "数据");
-    /// Initiate item No editing possible.
+    // Initiate item No editing possible.
     print_event_data_table_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    /// Resizes all columns based on the size hints of the delegate used to render each item in the columns.
+    // Resizes all columns based on the size hints of the delegate used to render each item in the columns.
 //    connect(this->print_event_data_table_, &QTableWidget::itemChanged
 //            , this->print_event_data_table_, &QTableWidget::resizeColumnsToContents);
     print_event_data_table_->resizeColumnsToContents();
-    /// Resizes the given row based on the size hints of the delegate used to render each item in the row.
+    // Resizes the given row based on the size hints of the delegate used to render each item in the row.
     connect(print_event_data_table_, &QTableWidget::cellChanged
             , print_event_data_table_, &QTableWidget::resizeRowToContents);
     print_event_data_table_->setColumnWidth(0, 120);
@@ -180,20 +185,20 @@ void CenterWindow::InitUI()
     event_data_box->addWidget(print_event_data_table_, 2, 0, 10, 10);
     event_data_plot_layout->addLayout(event_data_box);
 
-    ///Axis-Event
-    /// —————————————QGridLayout(axis_box)—————————————
-    ///| 事件数据
-    ///|     |FA13||FA14||FA15||0216||0217||0218||0219|
-    ///|
-    ///|     |                     *.           | -                             |
-    ///|     |                *.  *.   *.       | * -                           |
-    ///|     |                 *.         *.    |    *-                         |
-    ///|     |               *.            *.   |     * -  -                    |
-    ///|     |         * . * .                  |       *     - -               |
-    ///|     |        * .                       |         *        -            |
-    ///|     |      * .                         |            * *       -   -    |
-    ///|     |     *.                           |                  *          - |
-    ///|     |   *.                             |                     * *  *    |
+    //Axis-Event
+    // —————————————QGridLayout(axis_box)—————————————
+    //| 事件数据
+    //|     |FA13||FA14||FA15||0216||0217||0218||0219|
+    //|
+    //|     |                     *.           | -                             |
+    //|     |                *.  *.   *.       | * -                           |
+    //|     |                 *.         *.    |    *-                         |
+    //|     |               *.            *.   |     * -  -                    |
+    //|     |         * . * .                  |       *     - -               |
+    //|     |        * .                       |         *        -            |
+    //|     |      * .                         |            * *       -   -    |
+    //|     |     *.                           |                  *          - |
+    //|     |   *.                             |                     * *  *    |
 
     QGridLayout *axis_box = new QGridLayout;
     QLabel *plot_label = new QLabel("数据曲线");
@@ -204,9 +209,9 @@ void CenterWindow::InitUI()
         axis_box->addWidget(axis_btn_[i], 1, i);
     }
     acc_axis_ = new FCustomPlot;
-    SetupAccAxis(acc_axis_);
+//    SetupAccAxis(acc_axis_, );
     data_axis_ = new FCustomPlot;
-    SetupAccAxis(data_axis_);
+//    SetupAccAxis(data_axis_);
     axis_box->addWidget(acc_axis_, 2, 0, 10, 6);
     axis_box->addWidget(data_axis_, 2, 6, 10, 5);
     event_data_plot_layout->addLayout(axis_box);
@@ -221,318 +226,127 @@ void CenterWindow::InitUI()
 
 }
 
-
 void CenterWindow::InitConnect()
 {
-    /// ECU Serial Data Identifier
-    connect(this->ecu_information_btn_[0], &QPushButton::clicked, [this](){
-        char serial_char[17] = {0x20, 0x20, 0x20, 0x57, 0x54, 0x44, 0x32, 0x32, 0x30, 0x36, 0x30, 0x39, 0x30, 0x30, 0x30, 0x30, 0x31};
-        QByteArray serial_;
-        for (auto data : serial_char) {
-            serial_.push_back(data);
-        }
-        PrintStringInfo(*ecu_information_line_[0], serial_);
+    // ECU Serial Data Identifier
+    //
+//    connect(this->ecu_information_btn_[0], &QPushButton::clicked, [this](){
+//        char serial_char[17] = {0x20, 0x20, 0x20, 0x57, 0x54, 0x44, 0x32, 0x32, 0x30, 0x36, 0x30, 0x39, 0x30, 0x30, 0x30, 0x30, 0x31};
+//        QByteArray serial_;
+//        for (auto data : serial_char) {
+//            serial_.push_back(data);
+//        }
+//        PrintStringInfo(*ecu_information_line_[0], serial_);
+//    });
+
+    // ECU Hardversion Data Identifier
+    //
+//    connect(this->ecu_information_btn_[1], &QPushButton::clicked, [=](){
+//        char hard_version[8] = {0x48, 0x57, 0x3a, 0x30, 0x31, 0x2e, 0x30, 0x31};
+//        QByteArray hard_;
+//        for (auto data : hard_version) {
+//            hard_.push_back(data);
+//        }
+//        PrintStringInfo(*ecu_information_line_[1], hard_);
+//    });
+
+    // ECU Softversion Data Identifier
+    //
+//    connect(this->ecu_information_btn_[2], &QPushButton::clicked, [=](){
+//        char soft_version[8] = {0x53, 0x57, 0x3a, 0x30, 0x31, 0x2e, 0x30, 0x31};
+//        QByteArray soft_;
+//        for (auto data : soft_version) {
+//            soft_.push_back(data);
+//        }
+//        PrintStringInfo(*ecu_information_line_[2], soft_);
+//    });
+
+    // ECU Manufacture Data Identifier
+    //
+//    connect(this->ecu_information_btn_[3], &QPushButton::clicked, [=](){
+//        char manufacture_data[8] = {0x22, 0x06, 0x10};
+//        QByteArray manufacture_data_;
+//        for (auto data : manufacture_data) {
+//            manufacture_data_.push_back(data);
+//        }
+//        PrintDateIdentInfo(*ecu_information_line_[3], manufacture_data_);
+//    });
+
+
+    // ECU Function Configration Data Identifier
+    //
+//    connect(this->ecu_information_btn_[4], &QPushButton::clicked, [=](){
+//        char function_configration_data_identifier[1] = {0x02};
+//        QByteArray function_configration_data_identifier_;
+//        for (auto data : function_configration_data_identifier) {
+//            function_configration_data_identifier_.push_back(data);
+//        }
+//        PrintWorkModeInfo(*ecu_information_line_[4], function_configration_data_identifier_);
+//    });
+
+    // Decode DTC information
+    //
+//    connect(this->read_dtc_btn, &QPushButton::clicked, [=](){
+//        char dtc[23] = {0x59, 0x02, 0x09, 0x11, 0x01, 0x00, 0x09, 0x11, 0x01, 0x00, 0x09, static_cast<char>(0xC1), 0x41, 0x00, 0x09, static_cast<char>(0xC1), 0x00, 0x00, 0x09, 0x01, 0x01, 0x00, 0x09};
+//        QByteArray dtc_;
+//        for (auto data : dtc) {
+//            dtc_.push_back(data);
+//        }
+//        DecodeDTC(*print_dtc_table_, dtc_);
+//    });
+
+    // Decade EDR Data 0x22 FA 13
+    //
+//    connect(this->event_data_btn_[0], &QPushButton::clicked, [=](){
+//        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA13.zudslog");
+//        DecodeEventData(*print_event_data_table_, data);
+//    });
+
+    // Decade EDR Data 0x22 FA 14
+    //
+//    connect(this->event_data_btn_[1], &QPushButton::clicked, [=](){
+//        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA14.zudslog");
+//        DecodeEventData(*print_event_data_table_, data);
+//    });
+
+    // Decade EDR Data 0x22 FA 15
+    //
+//    connect(this->event_data_btn_[2], &QPushButton::clicked, [=](){
+//        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA15.zudslog");
+//        DecodeEventData(*print_event_data_table_, data);
+//    });
+  connect(this->acc_axis_->xAxis, SIGNAL(rangeChanged(QCPRange)), this->acc_axis_->yAxis, SLOT(setRange(QCPRange)));
+
+  connect(this->clear_dtc_inf_btn_, &QPushButton::clicked, [=](){
+      ClearWidgetData(*print_dtc_table_);
     });
-
-    /// ECU Hardversion Data Identifier
-    connect(this->ecu_information_btn_[1], &QPushButton::clicked, [=](){
-        char hard_version[8] = {0x48, 0x57, 0x3a, 0x30, 0x31, 0x2e, 0x30, 0x31};
-        QByteArray hard_;
-        for (auto data : hard_version) {
-            hard_.push_back(data);
-        }
-        PrintStringInfo(*ecu_information_line_[1], hard_);
+  connect(this->event_data_btn_[7], &QPushButton::clicked, [=](){
+      ClearWidgetData(*print_event_data_table_);
     });
-
-    /// ECU Softversion Data Identifier
-    connect(this->ecu_information_btn_[2], &QPushButton::clicked, [=](){
-        char soft_version[8] = {0x53, 0x57, 0x3a, 0x30, 0x31, 0x2e, 0x30, 0x31};
-        QByteArray soft_;
-        for (auto data : soft_version) {
-            soft_.push_back(data);
-        }
-        PrintStringInfo(*ecu_information_line_[2], soft_);
+  connect(this->axis_btn_[0], &QPushButton::clicked, [=](){
+      SetupAccAxis(*acc_axis_, GraphIndexSet(0), data_FA13_.longitudinal_acceleration, "FA13_edr_acc");  //
+      SetupVehicleSpeedAxis(*data_axis_, GraphIndexSet(0), data_FA13_.vehicle_speed, "FA13_speed");
     });
-
-    /// ECU Manufacture Data Identifier
-    connect(this->ecu_information_btn_[3], &QPushButton::clicked, [=](){
-        char manufacture_data[8] = {0x22, 0x06, 0x10};
-        QByteArray manufacture_data_;
-        for (auto data : manufacture_data) {
-            manufacture_data_.push_back(data);
-        }
-        PrintDateIdentInfo(*ecu_information_line_[3], manufacture_data_);
+  connect(this->axis_btn_[1], &QPushButton::clicked, [=](){
+      SetupAccAxis(*acc_axis_, GraphIndexSet(0), data_FA14_.longitudinal_acceleration, "FA14_edr_acc");
     });
-
-
-    /// ECU Function Configration Data Identifier
-    connect(this->ecu_information_btn_[4], &QPushButton::clicked, [=](){
-        char function_configration_data_identifier[1] = {0x02};
-        QByteArray function_configration_data_identifier_;
-        for (auto data : function_configration_data_identifier) {
-            function_configration_data_identifier_.push_back(data);
-        }
-        PrintWorkModeInfo(*ecu_information_line_[4], function_configration_data_identifier_);
+  connect(this->axis_btn_[2], &QPushButton::clicked, [=](){
+      SetupAccAxis(*acc_axis_, GraphIndexSet(0), data_FA15_.longitudinal_acceleration, "FA15_edr_acc");
     });
-
-    /// Decode DTC information
-    ///
-    connect(this->read_dtc_btn, &QPushButton::clicked, [=](){
-        char dtc[23] = {0x59, 0x02, 0x09, 0x11, 0x01, 0x00, 0x09, 0x11, 0x01, 0x00, 0x09, static_cast<char>(0xC1), 0x41, 0x00, 0x09, static_cast<char>(0xC1), 0x00, 0x00, 0x09, 0x01, 0x01, 0x00, 0x09};
-        QByteArray dtc_;
-        for (auto data : dtc) {
-            dtc_.push_back(data);
-        }
-        DecodeDTC(*print_dtc_table_, dtc_);
-    });
-
-    /// Decade EDR Data 0x22 FA 13
-    ///
-    connect(this->event_data_btn_[0], &QPushButton::clicked, [=](){
-        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA13.zudslog");
-        DecodeEventData(*print_event_data_table_, data);
-    });
-
-    /// Decade EDR Data 0x22 FA 14
-    ///
-    connect(this->event_data_btn_[1], &QPushButton::clicked, [=](){
-        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA14.zudslog");
-        DecodeEventData(*print_event_data_table_, data);
-    });
-
-    /// Decade EDR Data 0x22 FA 15
-    ///
-    connect(this->event_data_btn_[2], &QPushButton::clicked, [=](){
-        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA15.zudslog");
-        DecodeEventData(*print_event_data_table_, data);
-    });
-}
-
-void CenterWindow::PrintStringInfo(QLineEdit &line_edit, QByteArray &data)
-{
-    QString string;
-    for (auto data_ : data) {
-        string.push_back(QChar(data_));  // ASCII To QString
-    }
-    line_edit.clear();
-    line_edit.insert(string);
-}
-
-void CenterWindow::PrintWorkModeInfo(QLineEdit &line_edit, QByteArray &data)
-{
-    const char normol_mode = 0x01;   /// 正常模式
-    const char factory_mode = 0x02;  /// 工厂模式
-    line_edit.clear();
-    switch (data[0]) {
-    case normol_mode:
-        line_edit.insert("正常模式");
-        break;
-    case factory_mode:
-        line_edit.insert("工厂模式");
-        break;
-    default:
-        line_edit.insert("未知模式:" + data.toHex());
-        break;
-    }
-
-}
-
-void CenterWindow::PrintDateIdentInfo(QLineEdit &line_edit, QByteArray &data)
-{
-    bool ok;
-//    int year_int = QString::number(data[0], 16).toInt(&ok, 10);
-    data_type year = static_cast<unsigned int>(2000 + QString::number(data[0], 16).toInt(&ok, 10));
-    data_type month = static_cast<unsigned int>(QString::number(data[1], 16).toInt(&ok, 10));
-    data_type day = static_cast<unsigned int>(QString::number(data[2], 16).toInt(&ok, 10));
-    line_edit.clear();
-    line_edit.insert(QString::number(year,10) + "." + QString::number(month, 10) + "." + QString::number(day, 10));
-}
-
-void CenterWindow::DecodeDTC(QTableWidget &table_widget, QByteArray &data)
-{
-    /// Removes all the row and all its items from the table.
-    int row_counter = table_widget.rowCount();
-    while(row_counter--)
-        table_widget.removeRow(row_counter);
-    /// 分割故障码
-    QVector<QVector<unsigned char>> dtc_vector;
-    data.remove(0, 3);
-    for (int i = 0;i < data.size() / 4; i++) {
-        QVector<unsigned char> dtc_vector_;
-        for (int j = i * 4;j < i * 4 + 4; j++) {
-            dtc_vector_.push_back(static_cast<unsigned char>(data.at(j)));
-        }
-        dtc_vector.push_back(dtc_vector_);
-    }
-    for (auto dtc_vector_ : dtc_vector) {
-        QByteArray dtc_status;
-        dtc_status[0] = static_cast<char>(dtc_vector_.last());  /// 获取故障码状态
-        dtc_vector_.remove(3);
-        auto search = DTC.find(dtc_vector_);   /// 查找DTC中是否包含相应的故障码
-        if (search != DTC.end()){              /// 查找到响应的DTC
-            QByteArray dtc_array_key;
-            for (int i = 0; i < search.key().size(); i++) {  /// 将char类型转为QByteArray类型
-                dtc_array_key.push_back(static_cast<char>(search.key()[i]));
-            }
-            QString dtc_array_key_str = dataToHex(dtc_array_key);  /// 将QByteArray类型转为QString
-            QString dtc_status_str = dataToHex(dtc_status);
-            int row_counter = table_widget.rowCount();
-            table_widget.setRowCount(row_counter + 1);
-            table_widget.setItem(row_counter, 0, new QTableWidgetItem(dtc_array_key_str));  /// 打印DTC
-            table_widget.setItem(row_counter, 1, new QTableWidgetItem(dtc_status_str));     /// 打印DTC状态
-            table_widget.setItem(row_counter, 2, new QTableWidgetItem(search.value()));     /// 打印中文描述
-        } else{   /// 未查找到相应的DTC
-            QByteArray dtc_array_unconfirmed;
-            for (auto dtc_vector__ : dtc_vector_) {   ///将char类型转为QByteArray类型
-                dtc_array_unconfirmed.push_back(static_cast<char>(dtc_vector__));
-            }
-            QString dtc_array_unconfirmed_str = dataToHex(dtc_array_unconfirmed);  /// 将QByteArray类型转为QString
-            QString dtc_status_str = dataToHex(dtc_status);
-            int row_counter = table_widget.rowCount();
-            table_widget.setRowCount(row_counter + 1);
-            table_widget.setItem(row_counter, 0, new QTableWidgetItem(dtc_array_unconfirmed_str));  /// 打印DTC
-            table_widget.setItem(row_counter, 1, new QTableWidgetItem(dtc_status_str));  /// 打印DTC状态
-            table_widget.setItem(row_counter, 2, new QTableWidgetItem("本地未定义"));     /// 打印中文描述
-
-        }
-    }
-}
-
-void CenterWindow::SetupAccAxis(QCustomPlot *customPlot)
-{
-    customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
-    customPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    customPlot->legend->setVisible(true);
-    QFont legendFont = font();  // start out with MainWindow's font..
-    legendFont.setPointSize(9); // and make a bit smaller for legend
-    customPlot->legend->setFont(legendFont);
-    customPlot->legend->setBrush(QBrush(QColor(255, 255, 255, 230)));
-    // by default, the legend is in the inset layout of the main axis rect. So this is how we access it to change legend placement:
-    customPlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignRight);
-
-    // setup for graph 0: key axis left, value axis bottom
-    // will contain left maxwell-like function
-    customPlot->addGraph(customPlot->xAxis, customPlot->yAxis);
-    customPlot->graph(0)->setPen(QPen(QColor(255, 100, 0)));
-//    customPlot->graph(0)->setBrush(QBrush(QPixmap("://skin/images/balboa.jpg"))); // fill with texture of specified image
-    customPlot->graph(0)->setLineStyle(QCPGraph::lsLine);
-//    customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 5));
-    customPlot->graph(0)->setName("EDR Acc");
-
-    // setup for graph 1: key axis bottom, value axis left (those are the default axes)
-    // will contain bottom maxwell-like function
-    customPlot->addGraph();
-    customPlot->graph(1)->setPen(QPen(Qt::blue));
-//    customPlot->graph(1)->setBrush(QBrush(QPixmap("://skin/images/balboa.jpg"))); // same fill as we used for graph 0
-    customPlot->graph(1)->setLineStyle(QCPGraph::lsLine);
-//    customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssStar, Qt::red, Qt::white, 7));
-    //customPlot->graph(1)->setErrorType(QCPGraph::etValue);
-    customPlot->graph(1)->setName("ACU Acc");
-
-    /// Generate EDR Accelerate data
-    QVector<double> x0, y0 = {
-        -19, -70, -22, 4, 10, -4, -49, -56, 26, -66, -18, -47,
-        -25, -31, -34, -39, -36, -33, -25, -36, -24, -32, -3,
-        -20, -41, -5, -1, -13, -5,6, -5, -1, -8, -2, -4,0, -2,
-        -1, 4, 8, 0, 2, 1, 0, 0, 0, -1, 3, -3, 0, -1, -2, 0, -1,
-        0, 1, 0, 1, 1, 1, 0, 0, 1, -1, -2, -1, -1, 0
-    };
-    QVector<double> x1, y1 = {
-        0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -2, -2, -2, -1, -1, -1, -6,
-        -20, -24, -118, -306, -635, -756, -606, -219, 16, -392, -182, -132,
-        -94, -216, -528, -498, -663, -621, -192, -9, -428, -727, -604, -623,
-        -741, -578, -471, -639, -602, -536, -551, -575, -600, -543, -549, -586,
-        -567, -542, -507, -523, -547, -566, -487, -550, -600, -412, -242, -393,
-        -394, -206, -464, -222, -144, -64, -37, -43, -100, -195, -164, -84, -42,
-        -27, -73, -133, -65, 33, -11, -58, -52, -51, -63, -49, -28, -55, -63, -51,
-        -41, 2, 41, 12, 67, 18, 28, 23, 21, 22, 31, 18, 20, 16, 5, 10, -3, -20, -8,
-        -15, 11, 10, -16, -13, -7, -9, -15, -21, -29, -26
-    };
-    /// Get max and min element in EDR accelerate
-    auto y0_max = std::max_element(y0.begin(), y0.end());
-    auto y0_min = std::min_element(y0.begin(), y0.end());
-    /// data for graph 0 EDR Accelerate
-    for (int i = 0; i < y0.size(); i++) {
-        x0.append(i * 2);
-    }
-    /// data for graph 1 ACU Accelerate
-    for (int i = 0; i < y1.size(); ++i) {
-      x1.append(i - 20);
-//      srand(static_cast<unsigned>(time(NULL)));
-      y1[i] = y1[i] / 16;
-    }
-    /// pass data points to graphs:
-    customPlot->graph(0)->setData(x0, y0);
-    customPlot->graph(1)->setData(x1, y1);
-    /// activate top and right axes, which are invisible by default:
-//    customPlot->xAxis2->setVisible(true);
-//    customPlot->yAxis2->setVisible(true);
-    /// set ranges appropriate to show data:
-    customPlot->xAxis->setRange(-2, x1.size() + 2);
-    customPlot->yAxis->setRange(*y0_min - 2, *y0_max * 1.1);
-//    customPlot->xAxis2->setRange(0, 3.0 * M_PI);
-//    customPlot->yAxis2->setRange(-70, 35);
-
-}
-
-void CenterWindow::DecodeEventData(QTableWidget &table_widget, QByteArray &data)
-{
-  QString event_name = data.mid(1, 3).toHex().toUpper();
-  data.remove(0, 4);
-  /// Removes all the row and all its items from the table.
-  int row_counter = table_widget.rowCount();
-  while(row_counter--)
-    table_widget.removeRow(row_counter);
-
-  /// Creat EDR data map and populate it with original data.
-  QMap<QString, QVector<char>>data_original;
-  QMap<QString, QVector<int>>::const_iterator EDR_data_position_iterator = EDRDataPositionCHN.constBegin();
-  while(EDR_data_position_iterator != EDRDataPositionCHN.constEnd()){
-      QVector<char> data_;
-      /// get data from idex EDR_data_position_iterator.value(0) to idex EDR_data_position_iterator.value(1) in data
-      for(int i = EDR_data_position_iterator.value().at(0); i < EDR_data_position_iterator.value().at(1) + 1; i++){
-          data_.push_back(data[i]);
-        }
-      data_original.insert(EDR_data_position_iterator.key(), data_);
-      EDR_data_position_iterator++;
-    }
-
-  /// Parse the EDR data
-  EDRData data_processed;
-  EDRDataProcess(data_processed, data_original);
-
-  /// Print data to tablewidget
-  QMap<QString, QVector<QString>>::const_iterator data_processed_iterator = data_processed.EDR_data_CHN_str.constBegin();
-  while(data_processed_iterator != data_processed.EDR_data_CHN_str.constEnd()){
-      row_counter = table_widget.rowCount();
-      table_widget.setRowCount(row_counter + 1);
-      table_widget.setItem(row_counter, 0, new QTableWidgetItem(data_processed_iterator.key().mid(2)));  /// 打印元素名称
-      QString data_str = {};
-      for (auto str : data_processed_iterator.value()) {
-          data_str.push_back(str);
-          data_str.push_back(" ");
-        }
-      table_widget.setItem(row_counter, 1, new QTableWidgetItem(data_str));  /// 打印元素数据
-
-      data_processed_iterator++;
-    }
-
-  /// Save tabledidget data to .csv type file
-  SaveTablewidgetData(table_widget,"Output", event_name);
 
 }
 
 void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, QVector<char>> data_original)
 {
-    /// 解析数据
-    /// N 表示 EDR 读取的原始数据;
-    /// E 表示提取工具使用转化公式将 N 转译之后的 EDR 数据
+    // 解析数据
+    // N 表示 EDR 读取的原始数据;
+    // E 表示提取工具使用转化公式将 N 转译之后的 EDR 数据
 //    bool ok;
     QMap<QString, QVector<char>>::const_iterator data_original_iterator = data_original.constBegin();
     while(data_original_iterator != data_original.constEnd()){
         if(data_original_iterator.key() == "01纵向 delta-V"){
-            /// 转化公式 E = N - 127
-            /// 0xFF: 无法获取值, 0xFE: 无效值
+            // 转化公式 E = N - 127
+            // 0xFF: 无法获取值, 0xFE: 无效值
             QVector<int> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -545,8 +359,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_processed.EDR_data_CHN_str["01纵向 delta-V"] = data_str;
         }
         if(data_original_iterator.key() == "02最大记录纵向 delta-V"){
-            /// 转化公式 E = N - 127
-            /// 0xFF: 无法获取值, 0xFE: 无效值
+            // 转化公式 E = N - 127
+            // 0xFF: 无法获取值, 0xFE: 无效值
             QVector<int> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -559,8 +373,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_processed.EDR_data_CHN_str["02最大记录纵向 delta-V"] = data_str;
         }
         if(data_original_iterator.key() == "03达到最大记录纵向 delta-V 时间"){
-            /// 转化公式 E = N - 127
-            /// 0xFF: 无法获取值, 0xFE: 无效值
+            // 转化公式 E = N - 127
+            // 0xFF: 无法获取值, 0xFE: 无效值
             QVector<double> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -571,11 +385,10 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             QVector<QString> data_str = DataToString(data_, 2);
             data_processed.EDR_data_CHN_str["03达到最大记录纵向 delta-V 时间"] = data_str;
         }
-
         if(data_original_iterator.key() == "04削波标志"){
-            /// 转化公式 E = N
-            /// 第一个字节 0xFF: 无法获取值, 0xFE: 无效值
-            /// 第二个字节 0xFF: 无法获取值, 0xFE: 无效值
+            // 转化公式 E = N
+            // 第一个字节 0xFF: 无法获取值, 0xFE: 无效值
+            // 第二个字节 0xFF: 无法获取值, 0xFE: 无效值
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 data_.push_back(static_cast<uint8_t>(data__));
@@ -584,8 +397,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_processed.EDR_data_CHN_str["04削波标志"] = data_str;
         }
         if(data_original_iterator.key() == "05车辆速度"){
-            /// 转化公式 E = N
-            /// 范围 0 ~ 250
+            // 转化公式 E = N
+            // 范围 0 ~ 250
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 data_.push_back(static_cast<uint8_t>(data__));
@@ -594,8 +407,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_processed.EDR_data_CHN_str["05车辆速度"] = data_str;
         }
         if(data_original_iterator.key() == "06行车制动"){
-            /// 转化公式 0 关闭  1 开启
-            /// 范围 不适用
+            // 转化公式 0 关闭  1 开启
+            // 范围 不适用
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -613,8 +426,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_processed.EDR_data_CHN_str["06行车制动"] = data_str;
         }
         if(data_original_iterator.key() == "07驾驶员安全带状态"){
-            /// 转化公式 0 系  1 未系
-            /// 范围 不适用
+            // 转化公式 0 系  1 未系
+            // 范围 不适用
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -632,8 +445,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_processed.EDR_data_CHN_str["07驾驶员安全带状态"] = data_str;
         }
         if(data_original_iterator.key() == "08加速踏板位置"){
-            /// 转化公式 E = N ，全开位置的百分比
-            ///
+            // 转化公式 E = N ，全开位置的百分比
+            //
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 data_.push_back(static_cast<uint8_t>(data__));
@@ -641,10 +454,9 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             QVector<QString> data_str = DataToString(data_, 10);
             data_processed.EDR_data_CHN_str["08加速踏板位置"] = data_str;
         }
-
         if(data_original_iterator.key() == "09每分钟转数"){
-            /// 转化公式 E = N * 100
-            ///
+            // 转化公式 E = N * 100
+            //
             QVector<uint16_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -655,30 +467,27 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             QVector<QString> data_str = DataToString(data_, 10);
             data_processed.EDR_data_CHN_str["09每分钟转数"] = data_str;
         }
-
         if(data_original_iterator.key() == "10事件中上电周期"){
-            ///  转化公式 E = N
-            ///
+            //  转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
             QVector<QString> data_str = DataToString(data_, 10);
             data_processed.EDR_data_CHN_str["10事件中上电周期"] = data_str;
         }
-
         if(data_original_iterator.key() == "11读取时上电周期"){
-            ///  转化公式 E = N
-            ///
+            //  转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
             QVector<QString> data_str = DataToString(data_, 10);
             data_processed.EDR_data_CHN_str["11读取时上电周期"] = data_str;
         }
-
         if(data_original_iterator.key() == "12事件数据记录完整状态"){
-            /// 转化公式  0 未完成 1 完成
-            ///
+            // 转化公式  0 未完成 1 完成
+            //
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 data_.push_back(static_cast<uint8_t>(data__));
@@ -686,10 +495,9 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             QVector<QString> data_str = DataToString(data_, 10);
             data_processed.EDR_data_CHN_str["12事件数据记录完整状态"] = data_str;
         }
-
         if(data_original_iterator.key() == "13本次事件距上次事件的时间间隔"){
-            /// 转化公式 E = N * 0.1
-            ///
+            // 转化公式 E = N * 0.1
+            //
             QVector<double> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -700,10 +508,9 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             QVector<QString> data_str = DataToString(data_, 2);
             data_processed.EDR_data_CHN_str["13本次事件距上次事件的时间间隔"] = data_str;
         }
-
         if(data_original_iterator.key() == "14车辆识别代号"){
-            /// 转化公式 ASCII
-            ///
+            // 转化公式 ASCII
+            //
             QVector<QString> data_str;
             QString str;
             for(auto data__ : data_original_iterator.value()){
@@ -712,10 +519,9 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_str.push_back(str);
             data_processed.EDR_data_CHN_str["14车辆识别代号"] = data_str;
         }
-
         if(data_original_iterator.key() == "15记录EDR数据的ECU硬件编号"){
-            /// 转化公式 ASCII
-            ///
+            // 转化公式 ASCII
+            //
             QVector<QString> data_str;
             QString str;
             for(auto data__ : data_original_iterator.value()){
@@ -724,10 +530,9 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_str.push_back(str);
             data_processed.EDR_data_CHN_str["15记录EDR数据的ECU硬件编号"] = data_str;
         }
-
         if(data_original_iterator.key() == "16记录EDR数据的ECU序列号"){
-            /// 转化公式 ASCII
-            ///
+            // 转化公式 ASCII
+            //
             QVector<QString> data_str;
             QString str;
             for(auto data__ : data_original_iterator.value()){
@@ -736,10 +541,9 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_str.push_back(str);
             data_processed.EDR_data_CHN_str["16记录EDR数据的ECU序列号"] = data_str;
         }
-
         if(data_original_iterator.key() == "17记录EDR数据的ECU软件编号"){
-            /// 转化公式 ASCII
-            ///
+            // 转化公式 ASCII
+            //
             QVector<QString> data_str;
             QString str;
             for(auto data__ : data_original_iterator.value()){
@@ -748,10 +552,9 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
             data_str.push_back(str);
             data_processed.EDR_data_CHN_str["17记录EDR数据的ECU软件编号"] = data_str;
         }
-
         if(data_original_iterator.key() == "18纵向加速度"){
-            /// 转化公式 E = N - 127
-            ///
+            // 转化公式 E = N - 127
+            //
             QVector<int> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -765,8 +568,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "19横向加速度"){
-            /// 转化公式 E = N - 127
-            ///
+            // 转化公式 E = N - 127
+            //
             QVector<int> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -779,8 +582,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "20横向 delta-V"){
-            /// 转化公式 E = N - 127
-            ///
+            // 转化公式 E = N - 127
+            //
             QVector<int> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -793,8 +596,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "21最大记录横向 delta-V"){
-            /// 转化公式 E = N - 127
-            ///
+            // 转化公式 E = N - 127
+            //
             QVector<int> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -807,8 +610,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "22最大记录合量 delta-V 平方"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(1) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(0)) & 0x00FF));
@@ -817,8 +620,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "23达到最大记录横向 delta-V 时间"){
-            /// 转化公式 E = N * 2.5
-            ///
+            // 转化公式 E = N * 2.5
+            //
             QVector<double> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -831,8 +634,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "24达到最大记录合量 delta-V 平方的时间"){
-            /// 转化公式 E = N * 2.5
-            ///
+            // 转化公式 E = N * 2.5
+            //
             QVector<double> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -845,8 +648,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "25横摆角速度"){
-            /// 转化公式 E = N * 0.1 -300
-            ///
+            // 转化公式 E = N * 0.1 -300
+            //
             QVector<double> data_;
             QVector<uint16_t> data_uint16_t;
             for (int i = 0;i < data_original_iterator.value().size(); i += 2) {
@@ -866,8 +669,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "26转向角度"){
-            /// 转化公式 E = N * 5 -780
-            ///
+            // 转化公式 E = N * 5 -780
+            //
             QVector<uint16_t> data_;
             QVector<uint16_t> data_uint16_t;
             for (int i = 0;i < data_original_iterator.value().size(); i += 2) {
@@ -885,8 +688,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "27Tend"){
-            /// 转化公式 E = N *2.5
-            ///
+            // 转化公式 E = N *2.5
+            //
             QVector<double> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -899,8 +702,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "28年"){
-            /// 转化公式 E = N + 2000
-            ///
+            // 转化公式 E = N + 2000
+            //
             QVector<uint16_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -913,8 +716,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "29月"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -927,8 +730,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "30日"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -941,8 +744,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "31时"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -955,8 +758,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "32分"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -969,8 +772,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "33秒"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -983,8 +786,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "34挡位"){
-            /// 转化公式 0：P档，1：R档，2：N档，3：D档
-            ///
+            // 转化公式 0：P档，1：R档，2：N档，3：D档
+            //
             QVector<uint8_t> data_;
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
@@ -1011,8 +814,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "35发动机节气门位置"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -1025,8 +828,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "36制动踏板位置"){
-            /// 转化公式 E = N * 5
-            ///
+            // 转化公式 E = N * 5
+            //
             QVector<uint8_t> data_;
             for(auto data__ : data_original_iterator.value()){
                 if(IsValid(data__)){
@@ -1039,8 +842,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "37驻车系统状态"){
-            /// 转化公式 0：开启，1：故障，2：关闭
-            ///
+            // 转化公式 0：开启，1：故障，2：关闭
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch(data__){
@@ -1061,8 +864,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "38转向信号开关状态"){
-            /// 转化公式 0：关闭，1：左，2：右，3：双闪
-            ///
+            // 转化公式 0：关闭，1：左，2：右，3：双闪
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch(data__){
@@ -1086,8 +889,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "39驾驶员安全带预紧装置展开时间"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1096,8 +899,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "40驾驶员正面气囊展开时间(第一阶段)"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1106,8 +909,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "41驾驶员正面气囊展开时间(第二阶段)"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1116,8 +919,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "42驾驶员侧面气囊展开时间"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1126,8 +929,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "43驾驶员侧气帘展开时间"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1136,8 +939,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "44前排乘员安全带状态"){
-            /// 转化公式 0：系，1：未系
-            ///
+            // 转化公式 0：系，1：未系
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1156,8 +959,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "45前排乘员安全带预紧器装置展开时间"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1166,8 +969,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "46前排乘员正面气囊抑制状态"){
-            /// 转化公式 0：关闭(气囊可用)，1：开启(气囊不可用/抑制)
-            ///
+            // 转化公式 0：关闭(气囊可用)，1：开启(气囊不可用/抑制)
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1186,8 +989,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "47前排乘员正面气囊展开时间(第一阶段)"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1196,8 +999,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "48前排乘员正面气囊展开时间(第二阶段)"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1206,8 +1009,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "49前排乘员侧气囊展开时间"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1216,8 +1019,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "50前排乘员侧气帘展开时间"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1226,8 +1029,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "51乘员保护系统报警状态"){
-            /// 转化公式 0：关闭，1：开启
-            ///
+            // 转化公式 0：关闭，1：开启
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1246,8 +1049,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "52轮胎压力监测系统报警状态"){
-            /// 转化公式 0：关闭，1：开启
-            ///
+            // 转化公式 0：关闭，1：开启
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1266,8 +1069,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "53制动系统报警状态"){
-            /// 转化公式 0：关闭，1：开启
-            ///
+            // 转化公式 0：关闭，1：开启
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1286,8 +1089,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "54定速巡航系统状态"){
-            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 253：自定义
-            ///
+            // 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 253：自定义
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1309,8 +1112,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "55自适应巡航系统状态"){
-            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 253：自定义
-            ///
+            // 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 253：自定义
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1335,8 +1138,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "56防抱制动系统状态"){
-            /// 转化公式 0: 未激活，1：激活，2: 故障，3 ~ 253：自定义
-            ///
+            // 转化公式 0: 未激活，1：激活，2: 故障，3 ~ 253：自定义
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1358,8 +1161,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "57自动紧急制动系统状态"){
-            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 256：自定义
-            ///
+            // 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 256：自定义
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1384,8 +1187,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "58电子稳定性控制系统状态"){
-            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 256：自定义
-            ///
+            // 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 256：自定义
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1410,8 +1213,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "59牵引力控制系统状态"){
-            /// 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 256：自定义
-            ///
+            // 转化公式 0：开启未激活，1：开启激活，2：命令关闭，3：故障，4 ~ 256：自定义
+            //
             QVector<QString> data_str;
             for(auto data__ : data_original_iterator.value()){
                 switch (data__) {
@@ -1436,8 +1239,8 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
 
         if(data_original_iterator.key() == "60事件前同步计时时间"){
-            /// 转化公式 E = N
-            ///
+            // 转化公式 E = N
+            //
             QVector<uint16_t> data_;
             data_.push_back((static_cast<uint16_t>(data_original_iterator.value().at(0) << 8))
                             + (static_cast<uint16_t>(data_original_iterator.value().at(1)) & 0x00FF));
@@ -1446,6 +1249,299 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
         }
         data_original_iterator++;
     }
+}
+
+void CenterWindow::InitPlot(QCustomPlot &customPlot, QString graph0_name, QString graph1_name)
+{
+  customPlot.setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+  customPlot.setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
+  customPlot.legend->setVisible(true);
+  QFont legendFont = font();  // start out with MainWindow's font..
+  legendFont.setPointSize(9); // and make a bit smaller for legend
+  customPlot.legend->setFont(legendFont);
+  customPlot.legend->setBrush(QBrush(QColor(255, 255, 255, 230)));
+
+  // by default, the legend is in the inset layout of the main axis rect. So this is how we access it to change legend placement:
+  customPlot.axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignRight);
+
+  // setup for graph 0: key axis left, value axis bottom
+  // will contain left maxwell-like function
+  customPlot.addGraph(customPlot.xAxis, customPlot.yAxis);
+  customPlot.graph(0)->setPen(QPen(QColor(255, 100, 0)));
+//    customPlot.graph(0).setBrush(QBrush(QPixmap("://skin/images/balboa.jpg"))); // fill with texture of specified image
+  customPlot.graph(0)->setLineStyle(QCPGraph::lsLine);
+  customPlot.graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 4));
+  customPlot.graph(0)->setName(graph0_name);
+  // setup for graph 1: key axis bottom, value axis left (those are the default axes)
+  // will contain bottom maxwell-like function
+  customPlot.addGraph();
+  customPlot.graph(1)->setPen(QPen(Qt::blue));
+//    customPlot.graph(1).setBrush(QBrush(QPixmap("://skin/images/balboa.jpg"))); // same fill as we used for graph 0
+  customPlot.graph(1)->setLineStyle(QCPGraph::lsLine);
+  customPlot.graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssStar, Qt::blue, Qt::white, 4));
+//    customPlot.graph(1).setErrorType(QCPGraph::etValue);
+  customPlot.graph(1)->setName(graph1_name);
+//  customPlot.xAxis->setRange(-5, 20 + 2);
+//  customPlot.yAxis->setRange(-2, 1.1);
+
+}
+
+void CenterWindow::GetEventData(EventData &event_data, const EDRData data_processed)
+{
+  if(data_processed.EDR_data_CHN_str.contains("18纵向加速度")){
+      event_data.longitudinal_acceleration.clear();
+      for(auto acc_s :data_processed.EDR_data_CHN_str.value("18纵向加速度")){
+          if(IsValid(acc_s))
+            event_data.longitudinal_acceleration.push_back(acc_s.toInt());
+        }
+    }
+  if(data_processed.EDR_data_CHN_str.contains("05车辆速度")){
+      event_data.vehicle_speed.clear();
+      for(auto acc_s :data_processed.EDR_data_CHN_str.value("05车辆速度")){
+          if(IsValid(acc_s))
+            event_data.vehicle_speed.push_back(acc_s.toInt());
+        }
+    }
+}
+
+void CenterWindow::PrintStringInfo(QLineEdit &line_edit, QByteArray &data)
+{
+    QString string;
+    for (auto data_ : data) {
+        string.push_back(QChar(data_));  // ASCII To QString
+    }
+    line_edit.clear();
+    line_edit.insert(string);
+}
+
+void CenterWindow::PrintWorkModeInfo(QLineEdit &line_edit, QByteArray &data)
+{
+    const char normol_mode = 0x01;   // 正常模式
+    const char factory_mode = 0x02;  // 工厂模式
+    line_edit.clear();
+    switch (data[0]) {
+    case normol_mode:
+        line_edit.insert("正常模式");
+        break;
+    case factory_mode:
+        line_edit.insert("工厂模式");
+        break;
+    default:
+        line_edit.insert("未知模式:" + data.toHex());
+        break;
+    }
+
+}
+
+void CenterWindow::PrintDateIdentInfo(QLineEdit &line_edit, QByteArray &data)
+{
+    bool ok;
+//    int year_int = QString::number(data[0], 16).toInt(&ok, 10);
+    DataType year = static_cast<unsigned int>(2000 + QString::number(data[0], 16).toInt(&ok, 10));
+    DataType month = static_cast<unsigned int>(QString::number(data[1], 16).toInt(&ok, 10));
+    DataType day = static_cast<unsigned int>(QString::number(data[2], 16).toInt(&ok, 10));
+    line_edit.clear();
+    line_edit.insert(QString::number(year,10) + "." + QString::number(month, 10) + "." + QString::number(day, 10));
+}
+
+void CenterWindow::DecodeDTC(QTableWidget &table_widget, QByteArray &data)
+{
+    // Removes all the row and all its items from the table.
+    int row_counter = table_widget.rowCount();
+    while(row_counter--)
+        table_widget.removeRow(row_counter);
+    // 分割故障码
+    QVector<QVector<unsigned char>> dtc_vector;
+//    data.remove(0, 3);
+    for (int i = 0;i < data.size() / 4; i++) {
+        QVector<unsigned char> dtc_vector_;
+        for (int j = i * 4;j < i * 4 + 4; j++) {
+            dtc_vector_.push_back(static_cast<unsigned char>(data.at(j)));
+        }
+        dtc_vector.push_back(dtc_vector_);
+    }
+    for (auto dtc_vector_ : dtc_vector) {
+        QByteArray dtc_status;
+        dtc_status[0] = static_cast<char>(dtc_vector_.last());  // 获取故障码状态
+        dtc_vector_.remove(3);
+        auto search = DTC.find(dtc_vector_);   // 查找DTC中是否包含相应的故障码
+        if (search != DTC.end()){              // 查找到响应的DTC
+            QByteArray dtc_array_key;
+            for (int i = 0; i < search.key().size(); i++) {  // 将char类型转为QByteArray类型
+                dtc_array_key.push_back(static_cast<char>(search.key()[i]));
+            }
+            QString dtc_array_key_str = dataToHex(dtc_array_key);  // 将QByteArray类型转为QString
+            QString dtc_status_str = dataToHex(dtc_status);
+            int row_counter = table_widget.rowCount();
+            table_widget.setRowCount(row_counter + 1);
+            table_widget.setItem(row_counter, 0, new QTableWidgetItem(dtc_array_key_str));  // 打印DTC
+            table_widget.setItem(row_counter, 1, new QTableWidgetItem(dtc_status_str));     // 打印DTC状态
+            table_widget.setItem(row_counter, 2, new QTableWidgetItem(search.value()));     // 打印中文描述
+        } else{   // 未查找到相应的DTC
+            QByteArray dtc_array_unconfirmed;
+            for (auto dtc_vector__ : dtc_vector_) {   //将char类型转为QByteArray类型
+                dtc_array_unconfirmed.push_back(static_cast<char>(dtc_vector__));
+            }
+            QString dtc_array_unconfirmed_str = dataToHex(dtc_array_unconfirmed);  // 将QByteArray类型转为QString
+            QString dtc_status_str = dataToHex(dtc_status);
+            int row_counter = table_widget.rowCount();
+            table_widget.setRowCount(row_counter + 1);
+            table_widget.setItem(row_counter, 0, new QTableWidgetItem(dtc_array_unconfirmed_str));  // 打印DTC
+            table_widget.setItem(row_counter, 1, new QTableWidgetItem(dtc_status_str));  // 打印DTC状态
+            table_widget.setItem(row_counter, 2, new QTableWidgetItem("本地未定义"));     // 打印中文描述
+
+        }
+    }
+}
+
+void CenterWindow::SetupAccAxis(QCustomPlot &custom_plot, int index, QVector<double> acc, QString graph_name)
+{
+  if(acc.isEmpty()){
+      QMessageBox message_box(QMessageBox::Warning, QString(tr("Warning")),QString(tr("Longitudinal acceleration data is empty.")));
+      message_box.setStandardButtons (QMessageBox::Ignore | QMessageBox::Cancel);
+//      message_box.setButtonText (QMessageBox::Yes, QString("Yes"));
+//      message_box.setButtonText (QMessageBox::No, QString("Cancel"));
+      message_box.exec();
+      return;
+    }
+//    customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+//    customPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
+//    customPlot->legend->setVisible(true);
+//    QFont legendFont = font();  // start out with MainWindow's font..
+//    legendFont.setPointSize(9); // and make a bit smaller for legend
+//    customPlot->legend->setFont(legendFont);
+//    customPlot->legend->setBrush(QBrush(QColor(255, 255, 255, 230)));
+//    // by default, the legend is in the inset layout of the main axis rect. So this is how we access it to change legend placement:
+//    customPlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignRight);
+
+//    // setup for graph 0: key axis left, value axis bottom
+//    // will contain left maxwell-like function
+//    customPlot->addGraph(customPlot->xAxis, customPlot->yAxis);
+//    customPlot->graph(0)->setPen(QPen(QColor(255, 100, 0)));
+////    customPlot->graph(0)->setBrush(QBrush(QPixmap("://skin/images/balboa.jpg"))); // fill with texture of specified image
+//    customPlot->graph(0)->setLineStyle(QCPGraph::lsLine);
+////    customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 5));
+    custom_plot.graph(index)->setName(graph_name);
+
+//    // setup for graph 1: key axis bottom, value axis left (those are the default axes)
+//    // will contain bottom maxwell-like function
+//    customPlot->addGraph();
+//    customPlot->graph(1)->setPen(QPen(Qt::blue));
+////    customPlot->graph(1)->setBrush(QBrush(QPixmap("://skin/images/balboa.jpg"))); // same fill as we used for graph 0
+//    customPlot->graph(1)->setLineStyle(QCPGraph::lsLine);
+////    customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssStar, Qt::red, Qt::white, 7));
+////    customPlot->graph(1)->setErrorType(QCPGraph::etValue);
+//    customPlot->graph(1)->setName("ACU Acc");
+
+    // Generate EDR Accelerate data
+    QVector<double> acc_x;
+//    QVector<double> acc_acu_x;
+    // Get max and min element in EDR accelerate
+    auto acc_max = std::max_element(acc.begin(), acc.end());
+    auto acc_min = std::min_element(acc.begin(), acc.end());
+    // data for graph 0 EDR Accelerate
+    for (int i = 0; i < acc.size(); i++) {
+        acc_x.append(i * 2);
+    }
+    // data for graph 1 ACU Accelerate
+//    for (int i = 0; i < acc_acu.size(); ++i) {
+//      acc_acu_x.append(i - 20);
+//      acc_acu[i] = acc_acu[i] / 16;
+//    }
+    // pass data points to graphs:
+    custom_plot.graph(index)->setData(acc_x, acc);
+//    customPlot.graph(1)->setData(acc_acu_x, acc_acu);
+
+    // activate top and right axes, which are invisible by default:
+//    customPlot->xAxis2->setVisible(true);
+//    customPlot->yAxis2->setVisible(true);
+
+    // set ranges appropriate to show data:
+    custom_plot.xAxis->setRange(-5, acc_x.last() + 2);
+    custom_plot.yAxis->setRange(*acc_min - 2, *acc_max + 2);
+//    customPlot->xAxis2->setRange(0, 3.0 * M_PI);
+//    customPlot->yAxis2->setRange(-70, 35);
+    custom_plot.replot();
+}
+
+void CenterWindow::SetupVehicleSpeedAxis(QCustomPlot &custom_plot, int index, QVector<double> speed, QString graph_name)
+{
+  if(speed.isEmpty()){
+      QMessageBox message_box(QMessageBox::Warning, QString(tr("Warning")),QString(tr("Vehicle speed data is empty.")));
+      message_box.setStandardButtons (QMessageBox::Ignore | QMessageBox::Cancel);
+//      message_box.setButtonText (QMessageBox::Yes, QString("Yes"));
+//      message_box.setButtonText (QMessageBox::No, QString("Cancel"));
+      message_box.exec();
+      return;
+    }
+  custom_plot.graph(index)->setName(graph_name);
+  QVector<double> speed_x;
+  auto speed_max = std::max_element(speed.begin(), speed.end());
+  auto speed_min = std::min_element(speed.begin(), speed.end());
+  for (int i = 0; i < speed.size(); i++) {
+      speed_x.append(i);
+    }
+  custom_plot.graph(index)->setData(speed_x, speed);
+  custom_plot.xAxis->setRange(speed_x.first() - 1, speed_x.last() + 2);
+  custom_plot.yAxis->setRange(*speed_min - 2, *speed_max + 2);
+  custom_plot.replot();
+}
+
+void CenterWindow::DecodeEventData(QTableWidget &table_widget, QByteArray &data)
+{
+  QString event_name = data.mid(1, 2).toHex().toUpper();   // Gets which event it is.
+  LOG(INFO) << "Event data: " << dataToHex(data).toStdString();
+  data.remove(0, 3);
+  // Creat EDR data map and populate it with original data.
+  QMap<QString, QVector<char>>data_original;
+  QMap<QString, QVector<int>>::const_iterator EDR_data_position_iterator = EDRDataPositionCHN.constBegin();
+  while(EDR_data_position_iterator != EDRDataPositionCHN.constEnd()){
+      QVector<char> data_;
+      // get data from idex EDR_data_position_iterator.value(0) to idex EDR_data_position_iterator.value(1) in data
+      for(int i = EDR_data_position_iterator.value().at(0); i < EDR_data_position_iterator.value().at(1) + 1; i++){
+          data_.push_back(data[i]);
+        }
+      data_original.insert(EDR_data_position_iterator.key(), data_);
+      EDR_data_position_iterator++;
+    }
+
+  // Parse the EDR data.
+  EDRData data_processed;
+  EDRDataProcess(data_processed, data_original);
+
+  // Get event data.
+  //
+  if(event_name == "FA13"){
+      GetEventData(data_FA13_, data_processed);
+    }
+  else if(event_name == "FA14"){
+      GetEventData(data_FA14_, data_processed);
+    }
+  else if(event_name == "FA15"){
+      GetEventData(data_FA15_, data_processed);
+    }
+
+  // Removes all the row and all its items from the table.
+  int row_counter = table_widget.rowCount();
+  while(row_counter--)
+    table_widget.removeRow(row_counter);
+  // Print data to tablewidget
+  QMap<QString, QVector<QString>>::const_iterator data_processed_iterator = data_processed.EDR_data_CHN_str.constBegin();
+  while(data_processed_iterator != data_processed.EDR_data_CHN_str.constEnd()){
+      row_counter = table_widget.rowCount();
+      table_widget.setRowCount(row_counter + 1);
+      table_widget.setItem(row_counter, 0, new QTableWidgetItem(data_processed_iterator.key().mid(2)));  // 打印元素名称
+      QString data_str = {};
+      for (auto str : data_processed_iterator.value()) {
+          data_str.push_back(str + " ");
+        }
+      table_widget.setItem(row_counter, 1, new QTableWidgetItem(data_str));  // 打印元素数据
+      data_processed_iterator++;
+    }
+
+  // Save tabledidget data to .csv type file
+  SaveTablewidgetData(table_widget, "Output", event_name);
+
 }
 
 bool CenterWindow::SaveTablewidgetData(QTableWidget &table_widget, QString dir_name, QString file_name)
@@ -1468,7 +1564,7 @@ bool CenterWindow::SaveTablewidgetData(QTableWidget &table_widget, QString dir_n
   QTextStream stream(&file);
   QString contents;
   contents = QDateTime::currentDateTime().toString("yyyy.MM.dd-hh:mm:s") + "\n";
-  /// 写入头
+  // 写入头
   QHeaderView * header = table_widget.horizontalHeader();
   if(nullptr != header){
       for (int i = 0; i < header->count(); i++) {
@@ -1480,7 +1576,7 @@ bool CenterWindow::SaveTablewidgetData(QTableWidget &table_widget, QString dir_n
       contents += "\n";
     }
 
-  /// 写内容
+  // 写内容
   for (int row = 0; row < table_widget.rowCount(); row++){
       for(int column = 0; column < table_widget.columnCount(); column++){
           QTableWidgetItem * item = table_widget.item(row, column);
@@ -1527,126 +1623,82 @@ void CenterWindow::PrintSoftversionData(QByteArray &soft_version_data)
     ecu_information_line_[2]->insert(soft_version_string);
 }
 
-QByteArray dataToHex(const QByteArray &data, const QString &separator, const QString &prefix) {
-    if (separator.isEmpty() && prefix.isEmpty()) {
-        return data.toHex().toUpper();
-    }
-
-    QStringList list;
-    auto len = data.count();
-    for (int i = 0; i < len; i++) {
-        list.append(prefix);
-        auto hex = QString::number(data.at(i) & 0xFF, 16).toUpper();
-        while (hex.size() < 2) {
-            hex.prepend('0');
+void CenterWindow::ReceivedDataHandle(const QTime &time,const QString &dir,const QByteArray &data)
+{
+  if(dir == "Rx"){
+      QByteArray request_type = data.mid(4, 3);
+     request_type[0] = request_type.at(0) - 0x40;
+      if(request_type == serial_port::MasterSerialThread::ECUSerialNumberDataIdentifier){
+          QByteArray data_ = data.mid(7, 17);
+          PrintStringInfo(*ecu_information_line_[0], data_);
         }
-        list.append(hex);
-        if (i < len - 1) {
-            list.append(separator);
+      if(request_type == serial_port::MasterSerialThread::ECUHardWareVersionNumberDataIdentifier){
+          QByteArray data_ = data.mid(7, 10);
+          PrintStringInfo(*ecu_information_line_[1], data_);
+         }
+      if(request_type == serial_port::MasterSerialThread::ECUSoftWareVersionNumberDataIdentifier){
+          QByteArray data_ = data.mid(7, 10);
+          PrintStringInfo(*ecu_information_line_[2], data_);
+         }
+      if(request_type == serial_port::MasterSerialThread::ECUManufacturingDateOfProduction){
+          QByteArray data_ = data.mid(7, 3);
+          PrintDateIdentInfo(*ecu_information_line_[3], data_);
+         }
+      if(request_type == serial_port::MasterSerialThread::functionConfigrationDataIdentifier){
+          QByteArray data_ = data.mid(7, 1);
+          PrintWorkModeInfo(*ecu_information_line_[4], data_);
+         }
+      if(request_type == serial_port::MasterSerialThread::clearDiagnosticInformation){
+
+         }
+      if(request_type.mid(0, 2) == serial_port::MasterSerialThread::reportDTCByStatusMask.mid(0, 2)){
+          QByteArray data_ = data.mid(7, data.size() - 8);
+          DecodeDTC(*print_dtc_table_, data_);
+         }
+      if(request_type == serial_port::MasterSerialThread::eventData13){
+          QByteArray data_ = data.mid(4, 250) + data.mid(259, 250) + data.mid(514, 250) + data.mid(769, 25);
+          DecodeEventData(*print_event_data_table_, data_);
+         }
+      if(request_type == serial_port::MasterSerialThread::eventData14){
+          QByteArray data_ = data.mid(4, 250) + data.mid(259, 250) + data.mid(514, 250) + data.mid(769, 25);
+          DecodeEventData(*print_event_data_table_, data_);
+         }
+      if(request_type == serial_port::MasterSerialThread::eventData15){
+          QByteArray data_ = data.mid(4, 250) + data.mid(259, 250) + data.mid(514, 250) + data.mid(769, 25);
+          DecodeEventData(*print_event_data_table_, data_);
+         }
+    }
+}
+
+void CenterWindow::ClearECUInf()
+{
+  QMessageBox message_box(QMessageBox::Warning, QString(tr("Warning")),QString(tr("All ECU information is about to be cleared.")));
+  message_box.setStandardButtons (QMessageBox::Yes|QMessageBox::No);
+  message_box.setButtonText (QMessageBox::Yes,QString("Yes"));
+  message_box.setButtonText (QMessageBox::No,QString("Cancel"));
+  int res= message_box.exec();
+  if(res == QMessageBox::Yes){
+      // Removes its items from the QLineEdit.
+      for (int i = 0; i < 5; i++) {
+          ecu_information_line_[i]->clear();
         }
     }
-    return list.join("").toUtf8();
+
 }
 
-QByteArray ReadFromFile(QString path)
+void CenterWindow::ClearWidgetData(QTableWidget &table)
 {
-    QFile file(path);  /// 文件地址
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        return nullptr;
+  QMessageBox message_box(QMessageBox::Warning, QString(tr("Warning")),QString(tr("Everything is about to be cleared.")));
+  message_box.setStandardButtons (QMessageBox::Yes | QMessageBox::No);
+  message_box.setButtonText (QMessageBox::Yes, QString("Yes"));
+  message_box.setButtonText (QMessageBox::No, QString("Cancel"));
+  int res= message_box.exec();
+  if(res == QMessageBox::Yes){
+      // Removes all the row and all its items from the table.
+      int row_counter = table.rowCount();
+      while(row_counter--)
+        table.removeRow(row_counter);
     }
-    QByteArray data;
-    while(!file.atEnd())
-    {
-        bool ok;
-        QByteArray array = file.readAll();
-        for(int i = 0; i < array.size(); i += 3){
-            QString data_str;
-            data_str.push_back(array.at(i));
-            data_str.push_back(array.at(i + 1));
-            data.push_back(static_cast<char>(data_str.toInt(&ok, 16)));
-        }
-
-    }
-    return data;
 }
 
-QVector<QString> DataToString(QByteArray array, int base)
-{
-    QVector<QString> str;
-    for(auto data : array){
-        str.push_back(QString::number(data, base));
-//        if(data != ' '){
-//        }
-//        else str.push_back(data);
-    }
-    return str;
-}
 
-QVector<QString> DataToString(QVector<int> array, int base)
-{
-    QVector<QString> str;
-    for(auto data : array){
-        QString str_ = QString::number(data, base);
-//        if(str_.size() < 2)
-//            str_.prepend('0');
-        str.push_back(str_);
-    }
-    return str;
-}
-
-QVector<QString> DataToString(QVector<double> array, int precision)
-{
-    QVector<QString> str;
-    for(auto data : array){
-        QString str_ = QString::number(data, 'f', precision);
-//        if(str_.size() < 2)
-//            str_.prepend('0');
-        str.push_back(str_);
-    }
-    return str;
-}
-
-QVector<QString> DataToString(char array, int precision)
-{
-    QVector<QString> str;
-    QString str_ = QString::number(array, precision);
-//    if(str_.size() < 2)
-//        str_.prepend('0');
-    str.push_back(str_);
-    return str;
-}
-
-QVector<QString> DataToString(QVector<uint8_t> array, int precision)
-{
-    QVector<QString> str;
-    for(auto data : array){
-        QString str_ = QString::number(data, precision);
-//        if(str_.size() < 2)
-//            str_.prepend('0');
-        str.push_back(str_);
-    }
-    return str;
-}
-
-QVector<QString> DataToString(QVector<uint16_t> array, int precision)
-{
-    QVector<QString> str;
-    for(auto data : array){
-        QString str_ = QString::number(data, precision);
-//        if(str_.size() < 2)
-//            str_.prepend('0');
-        str.push_back(str_);
-    }
-    return str;
-}
-
-bool IsValid(char data)
-{
-    return ((data != static_cast<char>(0xFF)) && (data != static_cast<char>(0xFE))) ? true : false;
-}
-
-bool IsValid(uint16_t data)
-{
-    return ((data != static_cast<uint16_t>(0xFFFF)) && (data != static_cast<uint16_t>(0xFFFE))) ? true : false;
-}

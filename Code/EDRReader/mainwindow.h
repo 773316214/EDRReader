@@ -2,10 +2,10 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version	: 1.0.4
-** Author	: DuanZhaobing
+** Version  : 0.0.5
+** Author   : DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.20
+** Data     : 2022.06.02-2022.06.24
 **
 ****************************************************************************/
 
@@ -27,7 +27,7 @@ public:
 public:
     void InitUI();
     void InitBar();
-
+    void ConnectSignal();
 
 private:
     CenterWindow *center_window_{nullptr};
