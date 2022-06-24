@@ -299,21 +299,21 @@ void CenterWindow::InitConnect()
     //
 //    connect(this->event_data_btn_[0], &QPushButton::clicked, [=](){
 //        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA13.zudslog");
-//        DecodeEventData(*print_event_data_table_, data);
+//        EventDataProcess(*print_event_data_table_, data);
 //    });
 
     // Decade EDR Data 0x22 FA 14
     //
 //    connect(this->event_data_btn_[1], &QPushButton::clicked, [=](){
 //        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA14.zudslog");
-//        DecodeEventData(*print_event_data_table_, data);
+//        EventDataProcess(*print_event_data_table_, data);
 //    });
 
     // Decade EDR Data 0x22 FA 15
     //
 //    connect(this->event_data_btn_[2], &QPushButton::clicked, [=](){
 //        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA15.zudslog");
-//        DecodeEventData(*print_event_data_table_, data);
+//        EventDataProcess(*print_event_data_table_, data);
 //    });
   connect(this->acc_axis_->xAxis, SIGNAL(rangeChanged(QCPRange)), this->acc_axis_->yAxis, SLOT(setRange(QCPRange)));
 
@@ -329,14 +329,16 @@ void CenterWindow::InitConnect()
     });
   connect(this->axis_btn_[1], &QPushButton::clicked, [=](){
       SetupAccAxis(*acc_axis_, GraphIndexSet(0), data_FA14_.longitudinal_acceleration, "FA14_edr_acc");
+      SetupVehicleSpeedAxis(*data_axis_, GraphIndexSet(0), data_FA14_.vehicle_speed, "FA14_speed");
     });
   connect(this->axis_btn_[2], &QPushButton::clicked, [=](){
       SetupAccAxis(*acc_axis_, GraphIndexSet(0), data_FA15_.longitudinal_acceleration, "FA15_edr_acc");
+      SetupVehicleSpeedAxis(*data_axis_, GraphIndexSet(0), data_FA15_.vehicle_speed, "FA15_speed");
     });
 
 }
 
-void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, QVector<char>> data_original)
+void CenterWindow::DecodeEDRData(EDRData &data_processed, const QMap<QString, QVector<char>> data_original)
 {
     // 解析数据
     // N 表示 EDR 读取的原始数据;
@@ -1251,6 +1253,10 @@ void CenterWindow::EDRDataProcess(EDRData &data_processed, const QMap<QString, Q
     }
 }
 
+void CenterWindow::AlgorithmIntermediateVariableProcess(EDRData &data_processed, const QMap<QString, QVector<char>> data_original)
+{
+
+}
 void CenterWindow::InitPlot(QCustomPlot &customPlot, QString graph0_name, QString graph1_name)
 {
   customPlot.setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
@@ -1487,7 +1493,7 @@ void CenterWindow::SetupVehicleSpeedAxis(QCustomPlot &custom_plot, int index, QV
   custom_plot.replot();
 }
 
-void CenterWindow::DecodeEventData(QTableWidget &table_widget, QByteArray &data)
+void CenterWindow::EventDataProcess(QTableWidget &table_widget, QByteArray &data)
 {
   QString event_name = data.mid(1, 2).toHex().toUpper();   // Gets which event it is.
   LOG(INFO) << "Event data: " << dataToHex(data).toStdString();
@@ -1507,7 +1513,7 @@ void CenterWindow::DecodeEventData(QTableWidget &table_widget, QByteArray &data)
 
   // Parse the EDR data.
   EDRData data_processed;
-  EDRDataProcess(data_processed, data_original);
+  DecodeEDRData(data_processed, data_original);
 
   // Get event data.
   //
@@ -1541,6 +1547,11 @@ void CenterWindow::DecodeEventData(QTableWidget &table_widget, QByteArray &data)
 
   // Save tabledidget data to .csv type file
   SaveTablewidgetData(table_widget, "Output", event_name);
+
+}
+
+void CenterWindow::DecodeAlgorithmIntermediateVariable(QTableWidget &table_widget, QByteArray &data)
+{
 
 }
 
@@ -1657,15 +1668,15 @@ void CenterWindow::ReceivedDataHandle(const QTime &time,const QString &dir,const
          }
       if(request_type == serial_port::MasterSerialThread::eventData13){
           QByteArray data_ = data.mid(4, 250) + data.mid(259, 250) + data.mid(514, 250) + data.mid(769, 25);
-          DecodeEventData(*print_event_data_table_, data_);
+          EventDataProcess(*print_event_data_table_, data_);
          }
       if(request_type == serial_port::MasterSerialThread::eventData14){
           QByteArray data_ = data.mid(4, 250) + data.mid(259, 250) + data.mid(514, 250) + data.mid(769, 25);
-          DecodeEventData(*print_event_data_table_, data_);
+          EventDataProcess(*print_event_data_table_, data_);
          }
       if(request_type == serial_port::MasterSerialThread::eventData15){
           QByteArray data_ = data.mid(4, 250) + data.mid(259, 250) + data.mid(514, 250) + data.mid(769, 25);
-          DecodeEventData(*print_event_data_table_, data_);
+          EventDataProcess(*print_event_data_table_, data_);
          }
     }
 }

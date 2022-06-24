@@ -24,7 +24,6 @@
 struct EventData{
   QVector<double> longitudinal_acceleration{};
   QVector<double> vehicle_speed{};
-
 };
 
 class CenterWindow : public QWidget
@@ -36,7 +35,8 @@ public:
 public:
     void InitUI();
     void InitConnect();
-    void EDRDataProcess(EDRData &data_processed, const QMap<QString, QVector<char> > data_original);
+    void DecodeEDRData(EDRData &data_processed, const QMap<QString, QVector<char> > data_original);
+    void AlgorithmIntermediateVariableProcess(EDRData &data_processed, const QMap<QString, QVector<char>> data_original);
     void InitPlot(QCustomPlot &customPlot, QString graph1_name, QString graph2_name);
     void GetEventData(EventData &event_data, const EDRData data_processed);
     // <summary>
@@ -147,7 +147,8 @@ public slots:
     // Decode EDR data
     //
     // <function summary>
-    void DecodeEventData(QTableWidget &table_widget, QByteArray &data);
+    void EventDataProcess(QTableWidget &table_widget, QByteArray &data);
+    void DecodeAlgorithmIntermediateVariable(QTableWidget &table_widget, QByteArray &data);
 
     // <function summary>
     // Save tablewidget data
