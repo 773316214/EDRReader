@@ -371,115 +371,114 @@ struct EDRData {
 };
 
 struct AlgorithmIntermediateVarible {
-  const QMap<QString, int> front_crash_length {
-    {"001_misc_bits", 1}
-    ,{"002_PAS_OK_bits", 1}
-    ,{"003_AngleCrash_FrontLH_misc_bits1", 1}
-    ,{"004_AngleCrash_LR_misc_bits1", 1}
-    ,{"005_AngleCrash_FrontRH_misc_bits1", 1}
-    ,{"006_AngleCrash_RL_misc_bits1", 1}
-    ,{"007_FrontPoleCrash_FrontLH_misc_bits1", 1}
-    ,{"008_FrontPoleCrash_LH_misc_bits1", 1}
-    ,{"009_FrontPoleCrash_FrontRH_misc_bits1", 1}
-    ,{"010_FrontPoleCrash_RH_misc_bits1", 1}
-    ,{"011_SidePoleCrash_SILH_misc_bits1", 1}
-    ,{"012_SidePoleCrash_LH_misc_bits1", 1}
-    ,{"013_SidePoleCrash_SIRH_misc_bits1", 1}
-    ,{"014_SidePoleCrash_RH_misc_bits1", 1}
-    ,{"015_Fcoff", 4}
-    ,{"016_SideLHcoff", 4}
-    ,{"017_SideRHcoff", 4}
-    ,{"018_FISmodified", 4}
-    ,{"019_SISLHmodified", 4}
-    ,{"020_SISRHmodified", 4}
-    ,{"021_FrontCrash_AlgoCounter", 1}
-    ,{"022_FISLH_AlgoCounter", 1}
-    ,{"023_FISRH_AlgoCounter", 1}
-    ,{"024_FrontCrash_Threshold_Count", 1}
-    ,{"025_FISLH_Threshold_Count", 1}
-    ,{"026_FISRH_Threshold_Count", 1}
-    ,{"027_FrontCrash_fire_bits", 1}
-    ,{"028_FrontCrash_fire_bits2", 1}
-    ,{"029_FrontCrash_misc_bits", 1}
-    ,{"030_FrontCrash_misc_bits2", 1}
-    ,{"031_FrontCrash_misc_bits3", 1}
-    ,{"032_FrontCrash_misc_bits4", 1}
-    ,{"033_FISLH_fire_bits", 1}
-    ,{"034_FISLH_fire_bits2", 1}
-    ,{"035_FISLH_misc_bits", 1}
-    ,{"036_FISLH_misc_bits2", 1}
-    ,{"037_FISLH_misc_bits4", 1}
-    ,{"038_FISRH_fire_bits", 1}
-    ,{"039_FISRH_fire_bits2", 1}
-    ,{"040_FISRH_misc_bits", 1}
-    ,{"041_FISRH_misc_bits2", 1}
-    ,{"042_FISRH_misc_bits4", 1}
-    ,{"043_bits_FISD_AlgoOn", 1}
-    ,{"044_bits_FISP_AlgoOn", 1}
-    ,{"045_Front_fire_bits", 1}
-    ,{"046_Front_fire_bits2", 1}
-    ,{"047_bits_FISD_FireLevel1", 1}
-    ,{"048_bits_FISP_FireLevel1", 1}
-    ,{"049_RearCrash_misc_bits", 1}
-    ,{"050_FrontCrash_SavedAccltn_X_0", 2}
-    ,{"051_FrontCrash_SavedAccltn_X_1", 2}
-    ,{"052_FrontCrash_SavedAccltn_X_2", 2}
-    ,{"053_FrontCrash_SavedAccltn_X_3", 2}
-    ,{"054_FrontCrash_SavedAccltn_X_4", 2}
-    ,{"055_FrontCrash_SavedAccltn_X_5", 2}
-    ,{"056_FrontCrash_SavedAccltn_X_6", 2}
-    ,{"057_FrontCrash_SavedAccltn_X_7", 2}
-    ,{"058_FrontCrash_LowPassFilter_X", 2}
-    ,{"059_FrontCrash_Vel_X", 4}
-    ,{"060_FrontCrash_MD_Vel", 4}
-    ,{"061_FrontCrash_Jrk", 4}
-    ,{"062_FrontCrash_PD_X", 4}
-    ,{"063_FrontCrash_DeltaVelocity", 4}
-    ,{"064_FrontCrash_DeltaVelocityCount", 2}
-    ,{"065_FrontCrash_LocalJrk", 4}
-    ,{"066_FrontCrash_Power", 4}
-    ,{"067_FrontCrash_Velthreshold", 2}
-    ,{"068_FrontCrash_Jrkthreshold", 2}
-    ,{"069_FrontCrash_PDthreshold", 4}
-    ,{"070_FrontCrash_DVthreshold", 4}
-    ,{"071_FrontCrash_LocalJrkthreshold", 2}
-    ,{"072_FrontCrash_Powerthreshold", 4}
-    ,{"073_FISLH_SavedAccltn_X_0", 2}
-    ,{"074_FISLH_SavedAccltn_X_1", 2}
-    ,{"075_FISLH_SavedAccltn_X_2", 2}
-    ,{"076_FISLH_SavedAccltn_X_3", 2}
-    ,{"077_FISLH_SavedAccltn_X_4", 2}
-    ,{"078_FISLH_SavedAccltn_X_5", 2}
-    ,{"079_FISLH_SavedAccltn_X_6", 2}
-    ,{"080_FISLH_SavedAccltn_X_7", 2}
-    ,{"081_FISLH_LowPassFilter_X", 2}
-    ,{"082_FISLH_Vel_X", 4}
-    ,{"083_FISLH_MD_Vel", 4}
-    ,{"084_FISLH_PD_X", 4}
-    ,{"085_FISLH_Power", 4}
-    ,{"086_FISLH_Velthreshold", 2}
-    ,{"087_FISLH_PDthreshold", 4}
-    ,{"088_FISLH_Powerthreshold", 4}
-    ,{"089_FISRH_SavedAccltn_X_0", 2}
-    ,{"090_FISRH_SavedAccltn_X_1", 2}
-    ,{"091_FISRH_SavedAccltn_X_2", 2}
-    ,{"092_FISRH_SavedAccltn_X_3", 2}
-    ,{"093_FISRH_SavedAccltn_X_4", 2}
-    ,{"094_FISRH_SavedAccltn_X_5", 2}
-    ,{"095_FISRH_SavedAccltn_X_6", 2}
-    ,{"096_FISRH_SavedAccltn_X_7", 2}
-    ,{"097_FISRH_LowPassFilter_X", 2}
-    ,{"098_FISRH_Vel_X", 4}
-    ,{"099_FISRH_MD_Vel", 4}
-    ,{"100_FISRH_PD_X", 4}
-    ,{"101_FISRH_Power", 4}
-    ,{"102_FISRH_Velthreshold", 2}
-    ,{"103_FISRH_PDthreshold", 4}
-    ,{"104_FISRH_Powerthreshold", 4}
-    ,{"105_Reserve", 1}
-    ,{"106_Crash_Type", 1}
-    ,{"107_Flag_Save_Completed", 1}
-    ,{"108_Acc_variable_total_bytes", 1200}
+  const QMap<QString, QMap<QString, int>> front_crash_length {
+      {"001_misc_bits", {{"length", 1}, {"signed", false}}}
+    ,{"002_PAS_OK_bits", {{"length", 1}, {"signed", false}}}
+    ,{"003_AngleCrash_FrontLH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"004_AngleCrash_LR_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"005_AngleCrash_FrontRH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"006_AngleCrash_RL_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"007_FrontPoleCrash_FrontLH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"008_FrontPoleCrash_LH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"009_FrontPoleCrash_FrontRH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"010_FrontPoleCrash_RH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"011_SidePoleCrash_SILH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"012_SidePoleCrash_LH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"013_SidePoleCrash_SIRH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"014_SidePoleCrash_RH_misc_bits1", {{"length", 1}, {"signed", false}}}
+    ,{"015_Fcoff", {{"length", 4}, {"signed", true}}}
+    ,{"016_SideLHcoff", {{"length", 4}, {"signed", true}}}
+    ,{"017_SideRHcoff", {{"length", 4}, {"signed", true}}}
+    ,{"018_FISmodified", {{"length", 4}, {"signed", true}}}
+    ,{"019_SISLHmodified", {{"length", 4}, {"signed", true}}}
+    ,{"020_SISRHmodified", {{"length", 4}, {"signed", true}}}
+    ,{"021_FrontCrash_AlgoCounter", {{"length", 1}, {"signed", false}}}
+    ,{"022_FISLH_AlgoCounter", {{"length", 1}, {"signed", false}}}
+    ,{"023_FISRH_AlgoCounter", {{"length", 1}, {"signed", false}}}
+    ,{"024_FrontCrash_Threshold_Count", {{"length", 1}, {"signed", false}}}
+    ,{"025_FISLH_Threshold_Count", {{"length", 1}, {"signed", false}}}
+    ,{"026_FISRH_Threshold_Count", {{"length", 1}, {"signed", false}}}
+    ,{"027_FrontCrash_fire_bits", {{"length", 1}, {"signed", false}}}
+    ,{"028_FrontCrash_fire_bits2", {{"length", 1}, {"signed", false}}}
+    ,{"029_FrontCrash_misc_bits", {{"length", 1}, {"signed", false}}}
+    ,{"030_FrontCrash_misc_bits2", {{"length", 1}, {"signed", false}}}
+    ,{"031_FrontCrash_misc_bits3", {{"length", 1}, {"signed", false}}}
+    ,{"032_FrontCrash_misc_bits4", {{"length", 1}, {"signed", false}}}
+    ,{"033_FISLH_fire_bits", {{"length", 1}, {"signed", false}}}
+    ,{"034_FISLH_fire_bits2", {{"length", 1}, {"signed", false}}}
+    ,{"035_FISLH_misc_bits", {{"length", 1}, {"signed", false}}}
+    ,{"036_FISLH_misc_bits2", {{"length", 1}, {"signed", false}}}
+    ,{"037_FISLH_misc_bits4", {{"length", 1}, {"signed", false}}}
+    ,{"038_FISRH_fire_bits", {{"length", 1}, {"signed", false}}}
+    ,{"039_FISRH_fire_bits2", {{"length", 1}, {"signed", false}}}
+    ,{"040_FISRH_misc_bits", {{"length", 1}, {"signed", false}}}
+    ,{"041_FISRH_misc_bits2", {{"length", 1}, {"signed", false}}}
+    ,{"042_FISRH_misc_bits4", {{"length", 1}, {"signed", false}}}
+    ,{"043_bits_FISD_AlgoOn", {{"length", 1}, {"signed", false}}}
+    ,{"044_bits_FISP_AlgoOn", {{"length", 1}, {"signed", false}}}
+    ,{"045_Front_fire_bits", {{"length", 1}, {"signed", false}}}
+    ,{"046_Front_fire_bits2", {{"length", 1}, {"signed", false}}}
+    ,{"047_bits_FISD_FireLevel1", {{"length", 1}, {"signed", false}}}
+    ,{"048_bits_FISP_FireLevel1", {{"length", 1}, {"signed", false}}}
+    ,{"049_RearCrash_misc_bits", {{"length", 1}, {"signed", false}}}
+    ,{"050_FrontCrash_SavedAccltn_X_0", {{"length", 2}, {"signed", true}}}
+    ,{"051_FrontCrash_SavedAccltn_X_1", {{"length", 2}, {"signed", true}}}
+    ,{"052_FrontCrash_SavedAccltn_X_2", {{"length", 2}, {"signed", true}}}
+    ,{"053_FrontCrash_SavedAccltn_X_3", {{"length", 2}, {"signed", true}}}
+    ,{"054_FrontCrash_SavedAccltn_X_4", {{"length", 2}, {"signed", true}}}
+    ,{"055_FrontCrash_SavedAccltn_X_5", {{"length", 2}, {"signed", true}}}
+    ,{"056_FrontCrash_SavedAccltn_X_6", {{"length", 2}, {"signed", true}}}
+    ,{"057_FrontCrash_SavedAccltn_X_7", {{"length", 2}, {"signed", true}}}
+    ,{"058_FrontCrash_LowPassFilter_X", {{"length", 2}, {"signed", true}}}
+    ,{"059_FrontCrash_Vel_X", {{"length", 4}, {"signed", false}}}
+    ,{"060_FrontCrash_MD_Vel", {{"length", 4}, {"signed", false}}}
+    ,{"061_FrontCrash_Jrk", {{"length", 4}, {"signed", false}}}
+    ,{"062_FrontCrash_PD_X", {{"length", 4}, {"signed", false}}}
+    ,{"063_FrontCrash_DeltaVelocity", {{"length", 4}, {"signed", true}}}
+    ,{"064_FrontCrash_DeltaVelocityCount", {{"length", 2}, {"signed", false}}}
+    ,{"065_FrontCrash_LocalJrk", {{"length", 4}, {"signed", false}}}
+    ,{"066_FrontCrash_Power", {{"length", 4}, {"signed", false}}}
+    ,{"067_FrontCrash_Velthreshold", {{"length", 2}, {"signed", false}}}
+    ,{"068_FrontCrash_Jrkthreshold", {{"length", 2}, {"signed", false}}}
+    ,{"069_FrontCrash_PDthreshold", {{"length", 4}, {"signed", false}}}
+    ,{"070_FrontCrash_DVthreshold", {{"length", 4}, {"signed", false}}}
+    ,{"071_FrontCrash_LocalJrkthreshold", {{"length", 2}, {"signed", false}}}
+    ,{"072_FrontCrash_Powerthreshold", {{"length", 4}, {"signed", false}}}
+    ,{"073_FISLH_SavedAccltn_X_0", {{"length", 2}, {"signed", true}}}
+    ,{"074_FISLH_SavedAccltn_X_1", {{"length", 2}, {"signed", true}}}
+    ,{"075_FISLH_SavedAccltn_X_2", {{"length", 2}, {"signed", true}}}
+    ,{"076_FISLH_SavedAccltn_X_3", {{"length", 2}, {"signed", true}}}
+    ,{"077_FISLH_SavedAccltn_X_4", {{"length", 2}, {"signed", true}}}
+    ,{"078_FISLH_SavedAccltn_X_5", {{"length", 2}, {"signed", true}}}
+    ,{"079_FISLH_SavedAccltn_X_6", {{"length", 2}, {"signed", true}}}
+    ,{"080_FISLH_SavedAccltn_X_7", {{"length", 2}, {"signed", true}}}
+    ,{"081_FISLH_LowPassFilter_X", {{"length", 2}, {"signed", true}}}
+    ,{"082_FISLH_Vel_X", {{"length", 4}, {"signed", false}}}
+    ,{"083_FISLH_MD_Vel", {{"length", 4}, {"signed", false}}}
+    ,{"084_FISLH_PD_X", {{"length", 4}, {"signed", false}}}
+    ,{"085_FISLH_Power", {{"length", 4}, {"signed", false}}}
+    ,{"086_FISLH_Velthreshold", {{"length", 2}, {"signed", false}}}
+    ,{"087_FISLH_PDthreshold", {{"length", 4}, {"signed", false}}}
+    ,{"088_FISLH_Powerthreshold", {{"length", 4}, {"signed", false}}}
+    ,{"089_FISRH_SavedAccltn_X_0", {{"length", 2}, {"signed", true}}}
+    ,{"090_FISRH_SavedAccltn_X_1", {{"length", 2}, {"signed", true}}}
+    ,{"091_FISRH_SavedAccltn_X_2", {{"length", 2}, {"signed", true}}}
+    ,{"092_FISRH_SavedAccltn_X_3", {{"length", 2}, {"signed", true}}}
+    ,{"093_FISRH_SavedAccltn_X_4", {{"length", 2}, {"signed", true}}}
+    ,{"094_FISRH_SavedAccltn_X_5", {{"length", 2}, {"signed", true}}}
+    ,{"095_FISRH_SavedAccltn_X_6", {{"length", 2}, {"signed", true}}}
+    ,{"096_FISRH_SavedAccltn_X_7", {{"length", 2}, {"signed", true}}}
+    ,{"097_FISRH_LowPassFilter_X", {{"length", 2}, {"signed", true}}}
+    ,{"098_FISRH_Vel_X", {{"length", 4}, {"signed", false}}}
+    ,{"099_FISRH_MD_Vel", {{"length", 4}, {"signed", false}}}
+    ,{"100_FISRH_PD_X", {{"length", 4}, {"signed", false}}}
+    ,{"101_FISRH_Power", {{"length", 4}, {"signed", false}}}
+    ,{"102_FISRH_Velthreshold", {{"length", 2}, {"signed", false}}}
+    ,{"103_FISRH_PDthreshold", {{"length", 4}, {"signed", false}}}
+    ,{"104_FISRH_Powerthreshold", {{"length", 4}, {"signed", false}}}
+    ,{"105_Reserve", {{"length", 1}, {"signed", false}}}
+    ,{"106_Crash_Type", {{"length", 1}, {"signed", false}}}
+    ,{"107_Flag_Save_Completed", {{"length", 1}, {"signed", false}}}
   };
 
   const QMap<QString, int> side_crash_lh_length {

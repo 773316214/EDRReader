@@ -50,6 +50,10 @@ RESOURCES += \
     Resources/StytleSheet.qrc
 
 DISTFILES += \
+    Test/0216.zudslog \
+    Test/0217.zudslog \
+    Test/0218.zudslog \
+    Test/0219.zudslog \
     Test/FA13.zudslog \
     Test/FA14.zudslog \
     Test/FA15.zudslog

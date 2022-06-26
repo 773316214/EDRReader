@@ -47,69 +47,97 @@ QByteArray ReadFromFile(QString path)
     return data;
 }
 
-QVector<QString> DataToString(QByteArray array, int base)
+QVector<QString> DataToString(QByteArray data, int base)
 {
     QVector<QString> str;
-    for(auto data : array){
-        str.push_back(QString::number(data, base));
+    for(auto data_ : data){
+        str.push_back(QString::number(data_, base));
 //        if(data != ' '){
 //        }
 //        else str.push_back(data);
     }
     return str;
 }
-
-QVector<QString> DataToString(QVector<int> array, int base)
+QVector<QString> DataToString(QVector<double> data, int precision)
 {
     QVector<QString> str;
-    for(auto data : array){
-        QString str_ = QString::number(data, base);
+    for(auto data_ : data){
+        QString str_ = QString::number(data_, 'f', precision);
 //        if(str_.size() < 2)
 //            str_.prepend('0');
         str.push_back(str_);
     }
     return str;
 }
-
-QVector<QString> DataToString(QVector<double> array, int precision)
+QVector<QString> DataToString(char data, int precision)
 {
     QVector<QString> str;
-    for(auto data : array){
-        QString str_ = QString::number(data, 'f', precision);
-//        if(str_.size() < 2)
-//            str_.prepend('0');
-        str.push_back(str_);
-    }
-    return str;
-}
-
-QVector<QString> DataToString(char array, int precision)
-{
-    QVector<QString> str;
-    QString str_ = QString::number(array, precision);
+    QString str_ = QString::number(data, precision);
 //    if(str_.size() < 2)
 //        str_.prepend('0');
     str.push_back(str_);
     return str;
 }
-
-QVector<QString> DataToString(QVector<uint8_t> array, int precision)
+QVector<QString> DataToString(QVector<char> data, int precision)
 {
     QVector<QString> str;
-    for(auto data : array){
-        QString str_ = QString::number(data, precision);
+    for(auto data_ : data){
+        QString str_ = QString::number(data_, precision);
 //        if(str_.size() < 2)
 //            str_.prepend('0');
         str.push_back(str_);
     }
     return str;
 }
-
-QVector<QString> DataToString(QVector<uint16_t> array, int precision)
+QVector<QString> DataToString(QVector<uint8_t> data, int precision)
 {
     QVector<QString> str;
-    for(auto data : array){
-        QString str_ = QString::number(data, precision);
+    for(auto data_ : data){
+        QString str_ = QString::number(data_, precision);
+//        if(str_.size() < 2)
+//            str_.prepend('0');
+        str.push_back(str_);
+    }
+    return str;
+}
+QVector<QString> DataToString(QVector<uint16_t> data, int precision)
+{
+    QVector<QString> str;
+    for(auto data_ : data){
+        QString str_ = QString::number(data_, precision);
+//        if(str_.size() < 2)
+//            str_.prepend('0');
+        str.push_back(str_);
+    }
+    return str;
+}
+QVector<QString> DataToString(QVector<int16_t> data, int precision)
+{
+    QVector<QString> str;
+    for(auto data_ : data){
+        QString str_ = QString::number(data_, precision);
+//        if(str_.size() < 2)
+//            str_.prepend('0');
+        str.push_back(str_);
+    }
+    return str;
+}
+QVector<QString> DataToString(QVector<uint32_t> data, int precision)
+{
+    QVector<QString> str;
+    for(auto data_ : data){
+        QString str_ = QString::number(data_, precision);
+//        if(str_.size() < 2)
+//            str_.prepend('0');
+        str.push_back(str_);
+    }
+    return str;
+}
+QVector<QString> DataToString(QVector<int32_t> data, int base)
+{
+    QVector<QString> str;
+    for(auto data_ : data){
+        QString str_ = QString::number(data_, base);
 //        if(str_.size() < 2)
 //            str_.prepend('0');
         str.push_back(str_);

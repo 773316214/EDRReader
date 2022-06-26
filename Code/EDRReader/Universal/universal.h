@@ -6,12 +6,15 @@
 
 extern QByteArray dataToHex(const QByteArray &data, const QString &separator = " ", const QString &prefix = "");
 extern QByteArray ReadFromFile(QString path);
-extern QVector<QString> DataToString(QByteArray array, int base);
-extern QVector<QString> DataToString(QVector<int> array, int base);
-extern QVector<QString> DataToString(QVector<double> array, int precision);
-extern QVector<QString> DataToString(char array, int precision);
-extern QVector<QString> DataToString(QVector<uint8_t> array, int precision);
-extern QVector<QString> DataToString(QVector<uint16_t> array, int precision);
+extern QVector<QString> DataToString(QByteArray data, int base);
+extern QVector<QString> DataToString(QVector<double> data, int precision);
+extern QVector<QString> DataToString(char data, int precision);
+extern QVector<QString> DataToString(QVector<uint8_t> data, int precision);
+extern QVector<QString> DataToString(QVector<char> data, int precision);
+extern QVector<QString> DataToString(QVector<uint16_t> data, int precision);
+extern QVector<QString> DataToString(QVector<int16_t> data, int precision);
+extern QVector<QString> DataToString(QVector<uint32_t> data, int precision);
+extern QVector<QString> DataToString(QVector<int32_t> data, int base);
 
 extern bool IsValid(char data);
 extern bool IsValid(uint16_t data);

@@ -315,6 +315,14 @@ void CenterWindow::InitConnect()
 //        QByteArray data = ReadFromFile("E:\\Project\\EDRReader\\Code\\EDRReader\\Test\\FA15.zudslog");
 //        EventDataProcess(*print_event_data_table_, data);
 //    });
+
+     // Decade EDR Data 0x22 02 16
+
+    connect(this->event_data_btn_[3], &QPushButton::clicked, [=](){
+        QByteArray data = ReadFromFile("E:\\github\\Project\\EDRReader\\Code\\EDRReader\\Test\\0216.zudslog");
+        DecodeAlgorithmIntermediateVariable(*print_event_data_table_, data);
+    });
+
   connect(this->acc_axis_->xAxis, SIGNAL(rangeChanged(QCPRange)), this->acc_axis_->yAxis, SLOT(setRange(QCPRange)));
 
   connect(this->clear_dtc_inf_btn_, &QPushButton::clicked, [=](){
@@ -1253,10 +1261,11 @@ void CenterWindow::DecodeEDRData(EDRData &data_processed, const QMap<QString, QV
     }
 }
 
-void CenterWindow::AlgorithmIntermediateVariableProcess(EDRData &data_processed, const QMap<QString, QVector<char>> data_original)
-{
+//void CenterWindow::AlgorithmIntermediateVariableProcess(EDRData &data_processed, const QMap<QString, QVector<char>> data_original)
+//{
 
-}
+//}
+
 void CenterWindow::InitPlot(QCustomPlot &customPlot, QString graph0_name, QString graph1_name)
 {
   customPlot.setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
@@ -1552,6 +1561,73 @@ void CenterWindow::EventDataProcess(QTableWidget &table_widget, QByteArray &data
 
 void CenterWindow::DecodeAlgorithmIntermediateVariable(QTableWidget &table_widget, QByteArray &data)
 {
+    QString event_name = data.mid(1, 2).toHex().toUpper();   // Gets which event it is.
+    LOG(INFO) << "Event data: " << dataToHex(data).toStdString();
+    data.remove(0, 3);
+    // Creat algorithm intermediate varible data map and populate it with original data.
+    AlgorithmIntermediateVarible data_map;
+    QMap<QString, QVector<QString>> algo_intermediate_varible_data;
+    QMap<QString, QMap<QString, int>>::const_iterator data_length_map_iterator = data_map.front_crash_length.constBegin();
+    int position = 0;
+    while(data_length_map_iterator != data_map.front_crash_length.constEnd()){
+        QVector<char> data_;
+        position += data_length_map_iterator.value().value("length");
+        // get data from idex data_length_map_iterator.value to idex length_begin + data_length_map_iterator.value in data
+        for(int num = position - data_length_map_iterator.value().value("length"); num < position; num++)
+            data_.push_back(data[num]);
+
+        if((data_length_map_iterator.value().value("length") == 1) && (data_length_map_iterator.value().value("signed") == false)){
+        algo_intermediate_varible_data.insert(data_length_map_iterator.key(), DataToString(data_, 10));
+        }
+        if((data_length_map_iterator.value().value("length") == 2) && (data_length_map_iterator.value().value("signed") == true)){
+            QVector<int16_t> data__;
+            data__.push_back(static_cast<int16_t>(data_[0] << 8) + (static_cast<int16_t>(data_[1] & 0xFF)));
+            algo_intermediate_varible_data.insert(data_length_map_iterator.key(), DataToString(data__, 10));
+        }
+        if((data_length_map_iterator.value().value("length") == 2) && (data_length_map_iterator.value().value("signed") == false)){
+            QVector<int16_t> data__;
+            data__.push_back(static_cast<uint16_t>(data_[0] << 8) + (static_cast<uint16_t>(data_[1] & 0x00FF)));
+            algo_intermediate_varible_data.insert(data_length_map_iterator.key(), DataToString(data__, 10));
+        }
+        if((data_length_map_iterator.value().value("length") == 4) && (data_length_map_iterator.value().value("signed") == true)){
+            QVector<double> data__;
+            data__.push_back(static_cast<double>((data_[0] << 24) & 0xFF000000)
+                    + static_cast<double>((data_[1] << 16) & 0xFF0000)
+                    + static_cast<double>((data_[2] << 8) & 0xFF00)
+                    + static_cast<double>(data_[3] &0xFF));
+            algo_intermediate_varible_data.insert(data_length_map_iterator.key(), DataToString(data__, 2));
+        }
+        if((data_length_map_iterator.value().value("length") == 4) && (data_length_map_iterator.value().value("signed") == false)){
+            QVector<uint32_t> data__;
+            data__.push_back(static_cast<uint32_t>((data_[0] << 24) & 0xFF000000)
+                    + static_cast<uint32_t>((data_[1] << 16) & 0xFF0000)
+                    + static_cast<uint32_t>((data_[2] << 8) & 0xFF00)
+                    + static_cast<uint32_t>(data_[3] &0xFF));
+            algo_intermediate_varible_data.insert(data_length_map_iterator.key(), DataToString(data__, 10));
+        }
+        data_length_map_iterator++;
+      }
+
+    // Removes all the row and all its items from the table.
+    int row_counter = table_widget.rowCount();
+    while(row_counter--)
+      table_widget.removeRow(row_counter);
+    // Print data to tablewidget
+    QMap<QString, QVector<QString>>::const_iterator algo_intermediate_varible_data_iterator = algo_intermediate_varible_data.constBegin();
+    while(algo_intermediate_varible_data_iterator != algo_intermediate_varible_data.constEnd()){
+        row_counter = table_widget.rowCount();
+        table_widget.setRowCount(row_counter + 1);
+        table_widget.setItem(row_counter, 0, new QTableWidgetItem(algo_intermediate_varible_data_iterator.key()));  // 打印元素名称
+        QString data_str = {};
+        for (auto str : algo_intermediate_varible_data_iterator.value()) {
+            data_str.push_back(str + " ");
+          }
+        table_widget.setItem(row_counter, 1, new QTableWidgetItem(data_str));  // 打印元素数据
+        algo_intermediate_varible_data_iterator++;
+      }
+
+    // Save tabledidget data to .csv type file
+    SaveTablewidgetData(table_widget, "Output", event_name);
 
 }
 
