@@ -2,7 +2,7 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version  : 0.0.5
+** Version  : 1.0.2
 ** Author   : DuanZhaobing
 ** Email    : duanzb@waythink.cn
 ** Data     : 2022.06.02-2022.06.24
@@ -24,7 +24,6 @@
 struct EventData{
   QVector<double> longitudinal_acceleration{};
   QVector<double> vehicle_speed{};
-
 };
 
 class CenterWindow : public QWidget
@@ -36,8 +35,9 @@ public:
 public:
     void InitUI();
     void InitConnect();
-    void EDRDataProcess(EDRData &data_processed, const QMap<QString, QVector<char> > data_original);
-    void InitPlot(QCustomPlot &customPlot, QString graph1_name, QString graph2_name);
+    void DecodeEDRData(EDRData &data_processed, const QMap<QString, QVector<char> > data_original);
+    void AlgorithmIntermediateVariableProcess(EDRData &data_processed, const QMap<QString, QVector<char>> data_original);
+    void InitPlot(QCustomPlot &customplot, QString graph1_name, QString graph2_name);
     void GetEventData(EventData &event_data, const EDRData data_processed);
     // <summary>
     // ECU information btn
@@ -80,14 +80,15 @@ private:
     EventData data_FA13_;
     EventData data_FA14_;
     EventData data_FA15_;
-    QVector<double> longitudinal_acceleration13_{};
-    QVector<double> longitudinal_acceleration14_{};
-    QVector<double> longitudinal_acceleration15_{};
-    QVector<double> acceleration16_{};
-    QVector<double> acceleration17_{};
-    QVector<double> acceleration18_{};
-    QVector<double> acceleration19_{};
-    enum GraphIndexSet{edr_index = 0, acu_index = 1};
+//    QVector<double> longitudinal_acceleration13_{};
+//    QVector<double> longitudinal_acceleration14_{};
+//    QVector<double> longitudinal_acceleration15_{};
+    QMap<QString, QVector<double>>acceleration16_{};
+    QMap<QString, QVector<double>>acceleration17_{};
+    QMap<QString, QVector<double>>acceleration18_{};
+    QMap<QString, QVector<double>>acceleration19_{};
+
+    enum GraphIndexSet{edr_index = 0, acu_index = 1};  // 曲线索引
 signals:
 
 public slots:
@@ -147,7 +148,10 @@ public slots:
     // Decode EDR data
     //
     // <function summary>
-    void DecodeEventData(QTableWidget &table_widget, QByteArray &data);
+    void EventDataProcess(QTableWidget &table_widget, QByteArray &data);
+    void DecodeAlgorithmIntermediateVariable(QTableWidget &table_widget, QByteArray &received_data);
+    void GetAlgorithmIntermediateVariable(QByteArray received_data, QMap<QString, QVector<QString>> &algo_intermediate_varible, QMap<QString, QMap<QString, int>> data_length);
+
 
     // <function summary>
     // Save tablewidget data

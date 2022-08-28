@@ -2,33 +2,33 @@
 **
 ** Copyright (C) 2022 EDRReader
 **
-** Version  : 1.0.5
+** Version  : 1.0.2
 ** Author   : DuanZhaobing
 ** Email    : duanzb@waythink.cn
-** Data     : 2022.06.02-2022.06.24
+** Data     : 2022.06.02-2022.08.09
 **
 ****************************************************************************/
 #include "mainwindow.h"
 #include "Log/flog.h"
+#include "Universal/universal.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , center_window_( new CenterWindow)
     , serial_(new serial_port::MasterSerialThread)
 {
-    el::Loggers::removeFlag(el::LoggingFlag::NewLineForContainer);
-    el::Helpers::installLogDispatchCallback<LogHandler>("LogHandler");
-    el::Helpers::installLogDispatchCallback<HtmlHandler>("HtmlHandler");
-    LOG(INFO) << "Starting log";
-    LogHandler* logHandler = el::Helpers::logDispatchCallback<LogHandler>("LogHandler");
-    logHandler->setEnabled(false);
+  el::Loggers::removeFlag(el::LoggingFlag::NewLineForContainer);
+  el::Helpers::installLogDispatchCallback<LogHandler>("LogHandler");
+  el::Helpers::installLogDispatchCallback<HtmlHandler>("HtmlHandler");
+  LOG(INFO) << "Starting log";
+  LogHandler* logHandler = el::Helpers::logDispatchCallback<LogHandler>("LogHandler");
+  logHandler->setEnabled(false);
+  //    InitUI();
+  setCentralWidget(center_window_);  // 设置主窗体
 
-//    InitUI();
-    setCentralWidget(center_window_);  // 设置主窗体
-
-    InitBar();  // Initial menu bar tool bar and status ber
-    ConnectSignal();
-    resize(1080, 720);
+  InitBar();  // Initial menu bar tool bar and status ber
+  ConnectSignal();
+  resize(1080, 720);
 }
 
 MainWindow::~MainWindow()
@@ -118,9 +118,15 @@ void MainWindow::InitBar()
     toolbar_->addAction(save_acu_data_action);
     toolbar_->addAction(save_curve_action);
     toolbar_->addAction(clear_data_cation);
+
+//    设置状态栏
     statusbar_ = new QStatusBar(this);
     this->setStatusBar(statusbar_);
-
+    status_label_ = new QLabel;
+    status_label_->setMinimumWidth(300);
+    status_label_->setFrameShape(QFrame::NoFrame);
+    this->statusbar_->addWidget(status_label_);
+    status_label_->setText(tr("EDRReader"));
     connect(clear_data_cation, &QAction::triggered, center_window_, &CenterWindow::ClearECUInf);
 
 }
@@ -128,6 +134,9 @@ void MainWindow::InitBar()
 void MainWindow::ConnectSignal()
 {
   connect(serial_, &serial_port::MasterSerialThread::ResponseOrRequest, center_window_, &CenterWindow::ReceivedDataHandle);
+  connect(serial_, &serial_port::MasterSerialThread::ResponseOrRequest, this, &MainWindow::GetSerialData);
+  connect(this, &MainWindow::DataTostatusBar, this, &MainWindow::SetStatusbarText);
+
   connect(center_window_->ecu_information_btn_[0], &QPushButton::clicked,[this](){
      serial_->TransAction(100, serial_port::MasterSerialThread::ECUSerialNumberDataIdentifier);
     });
@@ -173,3 +182,15 @@ void MainWindow::ConnectSignal()
 
 }
 
+
+void MainWindow::GetSerialData(const QTime &time,const QString &dir,const QByteArray &data)
+{
+  QString data_str = dataToHex(data.mid(4, 3));
+  data_str = dir + " " + data_str;
+  emit DataTostatusBar(data_str);
+}
+
+void MainWindow::SetStatusbarText(QString &str)
+{
+  status_label_->setText(str);
+}

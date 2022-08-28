@@ -15,7 +15,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-VERSION = 1.0.0
+VERSION = 1.0.2
+RC_ICONS = "EDRReader.ico"
 
 SOURCES += \
     CenterWindow/centerwindow.cpp \
@@ -50,6 +51,10 @@ RESOURCES += \
     Resources/StytleSheet.qrc
 
 DISTFILES += \
+    Test/0216.zudslog \
+    Test/0217.zudslog \
+    Test/0218.zudslog \
+    Test/0219.zudslog \
     Test/FA13.zudslog \
     Test/FA14.zudslog \
     Test/FA15.zudslog
